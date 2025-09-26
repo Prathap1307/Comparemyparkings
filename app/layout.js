@@ -29,30 +29,6 @@ export const metadata = {
     "meet and greet parking comparison",
     "park and ride comparison"
   ],
-  verification: {
-    google: "YOUR_GOOGLE_VERIFICATION_CODE_HERE", // **IMPORTANT: Replace with actual code for comparemyparkings.co.uk**
-  },
-  openGraph: {
-    title: "Compare Airport Parking | Find the Best Deals | CompareMyParkings UK",
-    description: "Easily compare and book affordable airport parking at all major UK airports. Save time and money with CompareMyParkings.",
-    url: "https://comparemyparkings.co.uk",
-    images: [{
-      url: "/logo.png", // Using the generated logo
-      width: 1200,
-      height: 630,
-      alt: "CompareMyParkings Logo",
-    }],
-    siteName: "CompareMyParkings",
-  },
-  alternates: {
-    canonical: "https://comparemyparkings.co.uk",
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Compare Airport Parking | Find the Best Deals | CompareMyParkings UK",
-    description: "Easily compare and book affordable airport parking at all major UK airports. Save time and money with CompareMyParkings.",
-    images: ["/logo.png"], // Using the generated logo
-  },
 };
 
 export default function RootLayout({ children }) {

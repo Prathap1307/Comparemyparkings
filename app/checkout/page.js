@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect,useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Head from 'next/head';
 import { loadStripe } from '@stripe/stripe-js';
@@ -240,47 +240,7 @@ export default function Checkout() {
     }
   }, [router]);
 
-  useEffect(() => {
-    if (!bookingData) return;
-
-    // Create payment intent when booking data is available
-const createPaymentIntent = async () => {
-    try {
-      const response = await fetch("/api/create-payment-intent", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          amount: Math.round(calculateTotal() * 100),
-        }),
-      });
-
-      const data = await response.json();
-      if (data.clientSecret) {
-        setClientSecret(data.clientSecret);
-        // Store payment intent ID in localStorage for access control
-        localStorage.setItem('paymentIntentId', data.paymentIntentId);
-      } else {
-        console.error("No client secret received");
-      }
-    } catch (error) {
-      console.error("Payment intent error:", error);
-      alert("Failed to initialize payment");
-    }
-  };
-
-    createPaymentIntent();
-  }, [bookingData]);
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prevState => ({
-      ...prevState,
-      [name]: value
-    }));
-  };
-
-
-  const calculateTotal = () => {
+  const calculateTotal = useCallback(() => {
     if (!bookingData || !searchData) return 0;
     
     // Recalculate the price using the same logic as Compare page
@@ -293,7 +253,7 @@ const createPaymentIntent = async () => {
     }
     
     return baseTotal;
-  };
+  }, [bookingData, searchData, appliedPromo]); // Add all dependencies
 
   const calculateOriginalTotal = () => {
     if (!bookingData || !searchData) return 0;
@@ -330,6 +290,44 @@ const createPaymentIntent = async () => {
     const basic = parseFloat(lastTier.basic);
     const perDay = parseFloat(lastTier.perDay);
     return basic + (perDay * (duration - minDays));
+  };
+
+  useEffect(() => {
+    if (!bookingData) return;
+
+    const createPaymentIntent = async () => {
+      try {
+        const response = await fetch("/api/create-payment-intent", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            amount: Math.round(calculateTotal() * 100),
+          }),
+        });
+
+        const data = await response.json();
+        if (data.clientSecret) {
+          setClientSecret(data.clientSecret);
+          localStorage.setItem('paymentIntentId', data.paymentIntentId);
+        } else {
+          console.error("No client secret received");
+        }
+      } catch (error) {
+        console.error("Payment intent error:", error);
+        alert("Failed to initialize payment");
+      }
+    };
+
+    createPaymentIntent();
+  }, [bookingData, calculateTotal]);
+
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prevState => ({
+      ...prevState,
+      [name]: value
+    }));
   };
 
   const handlePromoCodeApply = () => {

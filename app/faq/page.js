@@ -152,7 +152,7 @@ export default function FAQ() {
                         {/* Contact CTA */}
                         <div className="mt-8 bg-blue-50 rounded-lg p-6 text-center">
                             <h3 className="text-xl font-bold text-gray-800 mb-2">Still have questions?</h3>
-                            <p className="text-gray-600 mb-4">Can't find the answer you're looking for? Please contact our friendly team.</p>
+                            <p className="text-gray-600 mb-4">Cant find the answer you are looking for? Please contact our friendly team.</p>
                             <button className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors">
                                 Contact Support
                             </button>

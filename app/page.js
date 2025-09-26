@@ -218,16 +218,18 @@ export default function Home() {
                 <section className="py-12 bg-white">
                     <div className="container mx-auto px-4">
                         <h2 className="text-3xl font-bold text-center mb-2 text-gray-900">Popular Heathrow Parking Options</h2>
-                        <p className="text-center text-gray-600 mb-8">Choose the parking option that's right for you</p>
+                        <p className="text-center text-gray-600 mb-8">Choose the parking option thats right for you</p>
                         
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                             {/* Meet and Greet */}
                             <div className="border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow duration-300">
                                 <div className="h-48 bg-blue-100 relative">
-                                    <img 
-                                        src="https://meetandgreetbristolairport.co.uk/wp-content/uploads/2022/07/Bristol-Airport-Meet-and-Greet-4.jpg" 
+                                    <Image 
+                                        src="/meet and greet.jpg" 
                                         alt="Meet and Greet Parking" 
                                         className="w-full h-full object-cover"
+                                        width={400}  // Add width
+                                        height={300} // Add height
                                     />
                                     <div className="absolute top-4 left-4 bg-orange-500 text-white px-3 py-1 rounded-full text-sm font-medium">
                                         Most Popular
@@ -268,10 +270,12 @@ export default function Home() {
                             {/* Park and Ride */}
                             <div className="border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow duration-300">
                                 <div className="h-48 bg-blue-100">
-                                    <img 
-                                        src="https://static.aphcdn.com/images/878/400/9/4298/APH-Car-Park-Manchester-Airport-Manchester-Portal-878x400-12.jpg" 
+                                    <Image
+                                        src="/Park and ride.jpg" 
                                         alt="Park and Ride" 
                                         className="w-full h-full object-cover"
+                                        width={400}  // Add width
+                                        height={300} // Add height
                                     />
                                 </div>
                                 <div className="p-6">
@@ -323,7 +327,7 @@ export default function Home() {
                                     </svg>
                                 </div>
                                 <h3 className="text-xl font-semibold mb-2 text-gray-900">Best Price Guarantee</h3>
-                                <p className="text-gray-600">Found it cheaper? We'll match the price and give you 10% of the difference.</p>
+                                <p className="text-gray-600">Found it cheaper? We will match the price and give you 10% of the difference.</p>
                             </div>
                             
                             <div className="text-center p-6">
@@ -333,7 +337,7 @@ export default function Home() {
                                     </svg>
                                 </div>
                                 <h3 className="text-xl font-semibold mb-2 text-gray-900">ABTA & ATOL Protected</h3>
-                                <p className="text-gray-600">Your money is safe with us. We're fully protected and accredited.</p>
+                                <p className="text-gray-600">Your money is safe with us. We are fully protected and accredited.</p>
                             </div>
                             
                             <div className="text-center p-6">
@@ -353,7 +357,7 @@ export default function Home() {
                 <section className="py-12 bg-white">
                     <div className="container mx-auto px-4">
                         <h2 className="text-3xl font-bold text-center mb-2 text-gray-900">What Our Customers Say</h2>
-                        <p className="text-center text-gray-600 mb-12">Don't just take our word for it</p>
+                        <p className="text-center text-gray-600 mb-12">Dont just take our word for it</p>
                         
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                             <div className="bg-gray-50 p-6 rounded-lg">
@@ -367,7 +371,7 @@ export default function Home() {
                                     </div>
                                 </div>
                                 <p className="text-gray-700 mb-4">
-                                    "Absolutely brilliant service! The meet and greet was seamless and saved us so much time with young children. Will definitely use again."
+                                    Absolutely brilliant service! The meet and greet was seamless and saved us so much time with young children. Will definitely use again.
                                 </p>
                                 <div className="flex items-center">
                                     <div className="w-10 h-10 bg-gray-300 rounded-full mr-3"></div>
@@ -389,7 +393,7 @@ export default function Home() {
                                     </div>
                                 </div>
                                 <p className="text-gray-700 mb-4">
-                                    "Great prices and even better service. The park and ride was efficient and the staff were very helpful. Saved over £30 compared to booking direct."
+                                    Great prices and even better service. The park and ride was efficient and the staff were very helpful. Saved over £30 compared to booking direct.
                                 </p>
                                 <div className="flex items-center">
                                     <div className="w-10 h-10 bg-gray-300 rounded-full mr-3"></div>

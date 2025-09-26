@@ -56,7 +56,7 @@ export default function PaymentFailed() {
               
               <h1 className="text-3xl font-bold text-gray-800 mb-4">Payment Failed</h1>
               <p className="text-gray-600 mb-6">
-                We're sorry, but your payment could not be processed. This could be due to insufficient funds, 
+                We are sorry, but your payment could not be processed. This could be due to insufficient funds, 
                 an issue with your card, or a temporary problem with our payment system.
               </p>
               

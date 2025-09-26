@@ -35,7 +35,7 @@ export default function Help() {
                         <div className="text-center mb-8">
                             <h1 className="text-4xl font-bold text-gray-800 mb-4">Help & Contact</h1>
                             <p className="text-gray-600 text-lg max-w-3xl mx-auto">
-                                We're here to help you with any questions or concerns about your parking booking. 
+                                We are here to help you with any questions or concerns about your parking booking. 
                                 Choose the appropriate contact method below for faster assistance.
                             </p>
                         </div>
@@ -135,7 +135,7 @@ export default function Help() {
                                     <div className="mt-8 p-4 bg-blue-50 rounded-lg">
                                         <h4 className="font-semibold text-blue-800 mb-2">Operating Hours</h4>
                                         <p className="text-blue-700">Monday - Sunday: 8:00 AM - 8:00 PM</p>
-                                        <p className="text-blue-700 text-sm">We're available 7 days a week to assist you</p>
+                                        <p className="text-blue-700 text-sm">We are available 7 days a week to assist you</p>
                                     </div>
                                 </div>
                             </div>

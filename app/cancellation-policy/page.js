@@ -67,7 +67,7 @@ export default function CancellationPolicy() {
                             <h2 className="text-2xl font-bold text-gray-800 mb-4">Policy Overview</h2>
                             <p className="text-gray-600 mb-4">
                                 We understand that plans can change. Our cancellation policy is designed to be fair to both 
-                                our customers and our parking partners. Below you'll find detailed information about our 
+                                our customers and our parking partners. Below you will find detailed information about our 
                                 cancellation terms and conditions.
                             </p>
                             <p className="text-gray-600">

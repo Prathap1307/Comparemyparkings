@@ -15,8 +15,6 @@ const PromoValidation = ({ promoCode, totalPrice, onValidationResult }) => {
       return;
     }
 
-    validatePromoCode();
-  }, [promoCode, totalPrice]);
 
   const validatePromoCode = async () => {
     setLoading(true);
@@ -60,6 +58,8 @@ const PromoValidation = ({ promoCode, totalPrice, onValidationResult }) => {
       setLoading(false);
     }
   };
+
+  }, [promoCode, totalPrice, onValidationResult]);
 
   const validatePromo = (promo, total) => {
     const promoType = promo.promovalidation;

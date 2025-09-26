@@ -1,17 +1,16 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter,useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import Head from 'next/head';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import Loading from '@/components/Loading';
+import Image from 'next/image';
+
 
 export default function Compare() {
     const router = useRouter();
-    const searchParams = useSearchParams();
-    const [showLoading, setShowLoading] = useState(false);
-    const [resultsCount, setResultsCount] = useState(null);
     const [searchData, setSearchData] = useState(null);
     const [activeFilter, setActiveFilter] = useState('all');
     const [sortBy, setSortBy] = useState('recommended');
@@ -52,28 +51,6 @@ export default function Compare() {
     };
 
     
-    // Check for loading parameter on component mount
-    useEffect(() => {
-        const loadingParam = searchParams.get('loading');
-        if (loadingParam === 'compare') {
-            setShowLoading(true);
-            
-            // Simulate search process
-            const searchProcess = async () => {
-                // Phase 1: Searching
-                await new Promise(resolve => setTimeout(resolve, 1500));
-                
-                // Phase 2: Found results
-                setResultsCount(parkingOptions.length);
-                await new Promise(resolve => setTimeout(resolve, 1000));
-                
-                setShowLoading(false);
-            };
-            
-            searchProcess();
-        }
-    }, [searchParams, parkingOptions.length]);
-
     // Fetch parking companies data from API
     useEffect(() => {
         const fetchParkingData = async () => {
@@ -371,10 +348,12 @@ export default function Compare() {
                                             <div className="flex items-start space-x-4">
                                                 {/* Logo */}
                                                 <div className="flex-shrink-0">
-                                                    <img 
+                                                    <Image 
                                                         src={parking.logo} 
                                                         alt={`${parking.name} logo`}
                                                         className="w-16 h-16 object-cover rounded-lg border border-gray-200"
+                                                        width={400}  // Add width
+                                                        height={300} // Add height
                                                     />
                                                 </div>
                                                 {/* Parking Info */}
@@ -480,7 +459,7 @@ export default function Compare() {
                             {modalType === 'photos' && (
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     {selectedParking.images.map((image, index) => (
-                                        <img 
+                                        <Image 
                                             key={index}
                                             src={image} 
                                             alt={`${selectedParking.name} ${index + 1}`}
