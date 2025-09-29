@@ -12,22 +12,36 @@ export default function Home() {
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);
     const [loadingType, setLoadingType] = useState('default');
+    const [errors, setErrors] = useState({});
 
     // State for form data
     const [searchData, setSearchData] = useState({
-        airport: "Heathrow",
-        terminal: "All terminals",
+        airport: "",
+        terminal: "",
         startDate: "",
-        startTime: "12:00 AM",
+        startTime: "",
         endDate: "",
-        endTime: "12:00 AM",
+        endTime: "",
+    });
+
+    const [datetimeInputs, setDatetimeInputs] = useState({
+        startDateTime: "",
+        endDateTime: ""
     });
 
     // State for active navigation link
     const [activeLink, setActiveLink] = useState('Home');
 
-    // Load saved data from localStorage on component mount
     useEffect(() => {
+
+                // Convert date and time to datetime-local format
+        const convertToDateTimeLocal = (date, time) => {
+            if (!date) return '';
+            
+            const time24h = convertTo24Hour(time);
+            return `${date}T${time24h}`;
+        };
+
         const savedSearchData = localStorage.getItem('parkingSearch');
         if (savedSearchData) {
             try {
@@ -36,13 +50,144 @@ export default function Home() {
                     ...prevState,
                     ...parsedData
                 }));
+                
+                // Convert saved date/time to datetime-local format for inputs
+                if (parsedData.startDate && parsedData.startTime) {
+                    const startDateTime = convertToDateTimeLocal(parsedData.startDate, parsedData.startTime);
+                    setDatetimeInputs(prev => ({ ...prev, startDateTime }));
+                }
+                if (parsedData.endDate && parsedData.endTime) {
+                    const endDateTime = convertToDateTimeLocal(parsedData.endDate, parsedData.endTime);
+                    setDatetimeInputs(prev => ({ ...prev, endDateTime }));
+                }
             } catch (error) {
                 console.error("Error parsing saved search data:", error);
             }
         }
     }, []);
 
-    // Handle form input changes
+    
+    // Validation function
+    const validateForm = () => {
+        const newErrors = {};
+        
+        if (!searchData.airport.trim()) {
+            newErrors.airport = 'Please select an airport';
+        }
+        
+        if (!searchData.terminal.trim()) {
+            newErrors.terminal = 'Please select a terminal';
+        }
+        
+        if (!searchData.startDate.trim()) {
+            newErrors.startDateTime = 'Please select start date and time';
+        }
+        
+        if (!searchData.endDate.trim()) {
+            newErrors.endDateTime = 'Please select end date and time';
+        }
+        
+        // Validate that end date/time is after start date/time
+        if (searchData.startDate && searchData.endDate) {
+            const start = new Date(`${searchData.startDate}T${convertTo24Hour(searchData.startTime)}`);
+            const end = new Date(`${searchData.endDate}T${convertTo24Hour(searchData.endTime)}`);
+            
+            if (end <= start) {
+                newErrors.endDateTime = 'End date/time must be after start date/time';
+            }
+        }
+
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
+
+    // Clear specific error when user starts typing
+    const clearError = (fieldName) => {
+        setErrors(prev => ({
+            ...prev,
+            [fieldName]: ''
+        }));
+    };
+
+    // Convert 12-hour time to 24-hour time
+    const convertTo24Hour = (time12h) => {
+        if (!time12h) return '00:00';
+        
+        const [time, modifier] = time12h.split(' ');
+        let [hours, minutes] = time.split(':');
+        
+        if (hours === '12') {
+            hours = '00';
+        }
+        
+        if (modifier === 'PM') {
+            hours = parseInt(hours, 10) + 12;
+        }
+        
+        return `${hours.toString().padStart(2, '0')}:${minutes || '00'}`;
+    };
+
+    // Convert 24-hour time to 12-hour time
+    const convertTo12Hour = (time24h) => {
+        if (!time24h) return '12:00 AM';
+        
+        let [hours, minutes] = time24h.split(':');
+        hours = parseInt(hours, 10);
+        
+        const modifier = hours >= 12 ? 'PM' : 'AM';
+        hours = hours % 12 || 12;
+        
+        return `${hours}:${minutes} ${modifier}`;
+    };
+
+    // Handle datetime-local input changes and split into date/time
+    const handleDateTimeChange = (e) => {
+        const { name, value } = e.target;
+        
+        // Update datetime inputs
+        setDatetimeInputs(prev => ({
+            ...prev,
+            [name]: value
+        }));
+
+        // Split datetime-local value into separate date and time
+        if (value) {
+            const [date, time] = value.split('T');
+            const time12h = convertTo12Hour(time);
+            
+            if (name === 'startDateTime') {
+                setSearchData(prev => ({
+                    ...prev,
+                    startDate: date,
+                    startTime: time12h
+                }));
+            } else if (name === 'endDateTime') {
+                setSearchData(prev => ({
+                    ...prev,
+                    endDate: date,
+                    endTime: time12h
+                }));
+            }
+        } else {
+            // Clear values if input is empty
+            if (name === 'startDateTime') {
+                setSearchData(prev => ({
+                    ...prev,
+                    startDate: "",
+                    startTime: "12:00 AM"
+                }));
+            } else if (name === 'endDateTime') {
+                setSearchData(prev => ({
+                    ...prev,
+                    endDate: "",
+                    endTime: "12:00 AM"
+                }));
+            }
+        }
+    }
+
+
+    // Handle other input changes (airport, terminal)
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         setSearchData(prevState => ({
@@ -54,6 +199,18 @@ export default function Home() {
         // Handle form submission with minimum 3-second loading
     const handleSubmit = async (e) => {
         e.preventDefault();
+        
+        // Validate form before submission
+        if (!validateForm()) {
+            // Scroll to first error
+            const firstErrorField = Object.keys(errors)[0];
+            const errorElement = document.querySelector(`[name="${firstErrorField}"]`);
+            if (errorElement) {
+                errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                errorElement.focus();
+            }
+            return;
+        }
         
         // Save to localStorage
         localStorage.setItem('parkingSearch', JSON.stringify(searchData));
@@ -79,12 +236,17 @@ export default function Home() {
         }
     };
 
+        // Helper function to determine input border color
+    const getInputBorderColor = (fieldName) => {
+        return errors[fieldName] ? 'border-red-500' : 'border-gray-300';
+    };
+
     if (isLoading) {
         return <Loading type={loadingType} count={76} />;
     }
 
     return (
-        <div className="min-h-screen flex flex-col bg-white">
+                <div className="min-h-screen flex flex-col bg-white">
             <Head>
                 <title>Compare Airport Parking | Best Deals at Heathrow</title>
                 <meta name="description" content="Compare and save on airport parking at Heathrow. Best prices guaranteed on meet & greet, park & ride, and onsite parking." />
@@ -116,12 +278,13 @@ export default function Home() {
                                             name="airport"
                                             value={searchData.airport}
                                             onChange={handleInputChange}
-                                            className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500 focus:border-transparent appearance-none bg-white"
+                                            className={`w-full p-3 border rounded-md focus:ring-2 focus:ring-orange-500 focus:border-transparent appearance-none bg-white ${getInputBorderColor('airport')}`}
                                         >
+                                            <option value="">Select Airport</option>
                                             <option value="Heathrow">London Heathrow (LHR)</option>
-                                            <option value="Gatwick">London Gatwick (LGW)</option>
-                                            <option value="Stansted">London Stansted (STN)</option>
-                                            <option value="Luton">London Luton (LTN)</option>
+                                            <option disabled value="Gatwick">London Gatwick (LGW)</option>
+                                            <option disabled value="Stansted">London Stansted (STN)</option>
+                                            <option disabled value="Luton">London Luton (LTN)</option>
                                         </select>
                                         <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
                                             <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
@@ -129,6 +292,14 @@ export default function Home() {
                                             </svg>
                                         </div>
                                     </div>
+                                    {errors.airport && (
+                                        <p className="text-red-500 text-xs mt-1 flex items-center">
+                                            <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                                            </svg>
+                                            {errors.airport}
+                                        </p>
+                                    )}
                                 </div>
                                 
                                 <div>
@@ -138,8 +309,9 @@ export default function Home() {
                                             name="terminal"
                                             value={searchData.terminal}
                                             onChange={handleInputChange}
-                                            className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500 focus:border-transparent appearance-none bg-white"
+                                            className={`w-full p-3 border rounded-md focus:ring-2 focus:ring-orange-500 focus:border-transparent appearance-none bg-white ${getInputBorderColor('terminal')}`}
                                         >
+                                            <option value="">Select Terminal</option>
                                             <option>All terminals</option>
                                             <option>Terminal 2</option>
                                             <option>Terminal 3</option>
@@ -152,28 +324,52 @@ export default function Home() {
                                             </svg>
                                         </div>
                                     </div>
+                                    {errors.terminal && (
+                                        <p className="text-red-500 text-xs mt-1 flex items-center">
+                                            <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                                            </svg>
+                                            {errors.terminal}
+                                        </p>
+                                    )}
                                 </div>
                                 
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">From Date & Time</label>
                                     <input 
                                         type="datetime-local" 
-                                        name="startDate"
-                                        value={searchData.startDate}
-                                        onChange={handleInputChange}
-                                        className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500 focus:border-transparent" 
+                                        name="startDateTime"
+                                        value={datetimeInputs.startDateTime}
+                                        onChange={handleDateTimeChange}
+                                        className={`w-full p-3 border rounded-md focus:ring-2 focus:ring-orange-500 focus:border-transparent ${getInputBorderColor('startDateTime')}`} 
                                     />
+                                    {errors.startDateTime && (
+                                        <p className="text-red-500 text-xs mt-1 flex items-center">
+                                            <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                                            </svg>
+                                            {errors.startDateTime}
+                                        </p>
+                                    )}
                                 </div>
                                 
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">To Date & Time</label>
                                     <input 
                                         type="datetime-local" 
-                                        name="endDate"
-                                        value={searchData.endDate}
-                                        onChange={handleInputChange}
-                                        className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                                        name="endDateTime"
+                                        value={datetimeInputs.endDateTime}
+                                        onChange={handleDateTimeChange}
+                                        className={`w-full p-3 border rounded-md focus:ring-2 focus:ring-orange-500 focus:border-transparent ${getInputBorderColor('endDateTime')}`}
                                     />
+                                    {errors.endDateTime && (
+                                        <p className="text-red-500 text-xs mt-1 flex items-center">
+                                            <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                                            </svg>
+                                            {errors.endDateTime}
+                                        </p>
+                                    )}
                                 </div>
                                 
                                 <div className="flex items-end lg:col-span-2">
