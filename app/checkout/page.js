@@ -393,7 +393,7 @@ export default function Checkout() {
                           name="title"
                           value={formData.title}
                           onChange={handleInputChange}
-                          className="w-full p-3 border border-gray-300 rounded-md"
+                          className="w-full p-3 border border-gray-300 rounded-md text-black"
                         >
                           <option>Mr</option>
                           <option>Mrs</option>
@@ -410,7 +410,7 @@ export default function Checkout() {
                           value={formData.firstName}
                           onChange={handleInputChange}
                           required
-                          className="w-full p-3 border border-gray-300 rounded-md"
+                          className="w-full p-3 border border-gray-300 rounded-md text-black"
                         />
                       </div>
                       <div>
@@ -421,7 +421,7 @@ export default function Checkout() {
                           value={formData.lastName}
                           onChange={handleInputChange}
                           required
-                          className="w-full p-3 border border-gray-300 rounded-md"
+                          className="w-full p-3 border border-gray-300 rounded-md text-black"
                         />
                       </div>
                     </div>
@@ -439,7 +439,7 @@ export default function Checkout() {
                           value={formData.contactNumber}
                           onChange={handleInputChange}
                           required
-                          className="w-full p-3 border border-gray-300 rounded-md"
+                          className="w-full p-3 border border-gray-300 rounded-md text-black"
                           placeholder="+44 123 456 789"
                         />
                         <p className="text-sm text-gray-500 mt-1">This field is required.</p>
@@ -452,7 +452,7 @@ export default function Checkout() {
                           value={formData.email}
                           onChange={handleInputChange}
                           required
-                          className="w-full p-3 border border-gray-300 rounded-md"
+                          className="w-full p-3 border border-gray-300 rounded-md text-black"
                           placeholder="your@email.com"
                         />
                       </div>
@@ -471,7 +471,7 @@ export default function Checkout() {
                           value={formData.carReg}
                           onChange={handleInputChange}
                           required
-                          className="w-full p-3 border border-gray-300 rounded-md"
+                          className="w-full p-3 border border-gray-300 rounded-md text-black"
                           placeholder="AB12 CDE"
                         />
                       </div>
@@ -482,7 +482,7 @@ export default function Checkout() {
                           name="flightNumber"
                           value={formData.flightNumber}
                           onChange={handleInputChange}
-                          className="w-full p-3 border border-gray-300 rounded-md"
+                          className="w-full p-3 border border-gray-300 rounded-md text-black"
                           placeholder="BA 123"
                         />
                       </div>
@@ -494,7 +494,7 @@ export default function Checkout() {
                           name="departureTerminal"
                           value={formData.departureTerminal}
                           onChange={handleInputChange}
-                          className="w-full p-3 border border-gray-300 rounded-md"
+                          className="w-full p-3 border border-gray-300 rounded-md text-black"
                         >
                           <option value="">Select terminal</option>
                           <option>Terminal 2</option>
@@ -510,7 +510,7 @@ export default function Checkout() {
                           name="returnFlightNumber"
                           value={formData.returnFlightNumber}
                           onChange={handleInputChange}
-                          className="w-full p-3 border border-gray-300 rounded-md"
+                          className="w-full p-3 border border-gray-300 rounded-md text-black"
                           placeholder="BA 124"
                         />
                       </div>
@@ -522,7 +522,7 @@ export default function Checkout() {
                           name="arrivalTerminal"
                           value={formData.arrivalTerminal}
                           onChange={handleInputChange}
-                          className="w-full p-3 border border-gray-300 rounded-md"
+                          className="w-full p-3 border border-gray-300 rounded-md text-black"
                         >
                           <option value="">Select terminal</option>
                           <option>Terminal 2</option>
@@ -545,7 +545,7 @@ export default function Checkout() {
                             name="customerInstruction" 
                             value={formData.customerInstruction}
                             onChange={handleInputChange}
-                            className="w-full p-3 border border-gray-300 rounded-md"
+                            className="w-full p-3 border border-gray-300 rounded-md text-black"
                             placeholder="Customer instruction (if any)"
                         />
                       </div>
@@ -565,7 +565,7 @@ export default function Checkout() {
                           value={promoCode}
                           onChange={(e) => setPromoCode(e.target.value)}
                           placeholder="Enter promo code"
-                          className="flex-1 p-3 border border-gray-300 rounded-md"
+                          className="flex-1 p-3 border border-gray-300 rounded-md text-black"
                         />
                       </div>
                     ) : (
@@ -651,15 +651,15 @@ export default function Checkout() {
                     <>
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-600">Terminal:</span>
-                        <span className="font-medium">{searchData.terminal}</span>
+                        <span className="font-medium text-black">{searchData.terminal}</span>
                       </div>
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-600">Start:</span>
-                        <span className="font-medium">{searchData.startDate} at {searchData.startTime}</span>
+                        <span className="font-medium text-black">{searchData.startDate} at {searchData.startTime}</span>
                       </div>
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-600">End:</span>
-                        <span className="font-medium">{searchData.endDate} at {searchData.endTime}</span>
+                        <span className="font-medium text-black">{searchData.endDate} at {searchData.endTime}</span>
                       </div>
                     </>
                   )}
@@ -671,22 +671,22 @@ export default function Checkout() {
                   {appliedPromo ? (
                     <>
                       <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Original price:</span>
+                        <span className="text-black">Original price:</span>
                         <span>£{appliedPromo.originalTotal.toFixed(2)}</span>
                       </div>
                       <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Promo discount:</span>
+                        <span className="text-black">Promo discount:</span>
                         <span className="text-green-600">-£{appliedPromo.discountAmount.toFixed(2)}</span>
                       </div>
                     </>
                   ) : (
                     <>
                       <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Taxes & fees:</span>
-                        <span>£0.00</span>
+                        <span className="text-black">Taxes & fees:</span>
+                        <span className='text-black'>£0.00</span>
                       </div>
                       <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Discount:</span>
+                        <span className="text-black">Discount:</span>
                         <span className="text-green-600">-£0.00</span>
                       </div>
                     </>
@@ -694,14 +694,14 @@ export default function Checkout() {
                   
                   <div className="border-t border-gray-200 pt-2 mt-2">
                     <div className="flex justify-between font-semibold">
-                      <span>Total:</span>
-                      <span>£{calculateTotal().toFixed(2)}</span>
+                      <span className='text-black'>Total:</span>
+                      <span className='text-black'>£{calculateTotal().toFixed(2)}</span>
                     </div>
                     
                     {appliedPromo && (
                       <div className="flex justify-between text-sm text-green-600 mt-1">
                         <span>You save:</span>
-                        <span>£{appliedPromo.discountAmount.toFixed(2)}</span>
+                        <span className='text-black'>£{appliedPromo.discountAmount.toFixed(2)}</span>
                       </div>
                     )}
                   </div>

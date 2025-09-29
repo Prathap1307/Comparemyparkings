@@ -63,7 +63,7 @@ export default function Home() {
             } catch (error) {
                 console.error("Error parsing saved search data:", error);
             }
-        }
+        }   
     }, []);
 
     
@@ -278,7 +278,7 @@ export default function Home() {
                                             name="airport"
                                             value={searchData.airport}
                                             onChange={handleInputChange}
-                                            className={`w-full p-3 border rounded-md focus:ring-2 focus:ring-orange-500 focus:border-transparent appearance-none bg-white ${getInputBorderColor('airport')}`}
+                                            className={`w-full p-3 border rounded-md focus:ring-2 focus:ring-orange-500 focus:border-transparent appearance-none text-black bg-white ${getInputBorderColor('airport')}`}
                                         >
                                             <option value="">Select Airport</option>
                                             <option value="Heathrow">London Heathrow (LHR)</option>
@@ -309,7 +309,7 @@ export default function Home() {
                                             name="terminal"
                                             value={searchData.terminal}
                                             onChange={handleInputChange}
-                                            className={`w-full p-3 border rounded-md focus:ring-2 focus:ring-orange-500 focus:border-transparent appearance-none bg-white ${getInputBorderColor('terminal')}`}
+                                            className={`w-full p-3 border rounded-md text-black focus:ring-2 focus:ring-orange-500 focus:border-transparent appearance-none bg-white ${getInputBorderColor('terminal')}`}
                                         >
                                             <option value="">Select Terminal</option>
                                             <option>All terminals</option>
@@ -341,7 +341,7 @@ export default function Home() {
                                         name="startDateTime"
                                         value={datetimeInputs.startDateTime}
                                         onChange={handleDateTimeChange}
-                                        className={`w-full p-3 border rounded-md focus:ring-2 focus:ring-orange-500 focus:border-transparent ${getInputBorderColor('startDateTime')}`} 
+                                        className={`w-full p-3 border rounded-md text-black focus:ring-2 focus:ring-orange-500 focus:border-transparent ${getInputBorderColor('startDateTime')}`} 
                                     />
                                     {errors.startDateTime && (
                                         <p className="text-red-500 text-xs mt-1 flex items-center">
@@ -360,7 +360,7 @@ export default function Home() {
                                         name="endDateTime"
                                         value={datetimeInputs.endDateTime}
                                         onChange={handleDateTimeChange}
-                                        className={`w-full p-3 border rounded-md focus:ring-2 focus:ring-orange-500 focus:border-transparent ${getInputBorderColor('endDateTime')}`}
+                                        className={`w-full p-3 text-black border rounded-md focus:ring-2 focus:ring-orange-500 focus:border-transparent ${getInputBorderColor('endDateTime')}`}
                                     />
                                     {errors.endDateTime && (
                                         <p className="text-red-500 text-xs mt-1 flex items-center">
