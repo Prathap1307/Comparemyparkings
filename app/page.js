@@ -13,6 +13,8 @@ export default function Home() {
     const [isLoading, setIsLoading] = useState(false);
     const [loadingType, setLoadingType] = useState('default');
     const [errors, setErrors] = useState({});
+    const [minStartDateTime, setMinStartDateTime] = useState('');
+    const [minEndDateTime, setMinEndDateTime] = useState('');
 
     // State for form data
     const [searchData, setSearchData] = useState({
@@ -33,8 +35,15 @@ export default function Home() {
     const [activeLink, setActiveLink] = useState('Home');
 
     useEffect(() => {
+        // Set minimum datetime for start date (current datetime)
+        const now = new Date();
+        // Round to nearest 15 minutes
+        const minutes = Math.ceil(now.getMinutes() / 15) * 15;
+        now.setMinutes(minutes);
+        const currentDateTimeLocal = now.toISOString().slice(0, 16);
+        setMinStartDateTime(currentDateTimeLocal);
 
-                // Convert date and time to datetime-local format
+        // Convert date and time to datetime-local format
         const convertToDateTimeLocal = (date, time) => {
             if (!date) return '';
             
@@ -55,6 +64,15 @@ export default function Home() {
                 if (parsedData.startDate && parsedData.startTime) {
                     const startDateTime = convertToDateTimeLocal(parsedData.startDate, parsedData.startTime);
                     setDatetimeInputs(prev => ({ ...prev, startDateTime }));
+                    
+                    // Set minimum end date based on saved start date
+                    if (parsedData.startDate) {
+                        const startDate = new Date(parsedData.startDate);
+                        const minEndDate = new Date(startDate);
+                        minEndDate.setDate(minEndDate.getDate() + 1);
+                        const minEndDateTimeLocal = minEndDate.toISOString().slice(0, 16);
+                        setMinEndDateTime(minEndDateTimeLocal);
+                    }
                 }
                 if (parsedData.endDate && parsedData.endTime) {
                     const endDateTime = convertToDateTimeLocal(parsedData.endDate, parsedData.endTime);
@@ -94,6 +112,13 @@ export default function Home() {
             
             if (end <= start) {
                 newErrors.endDateTime = 'End date/time must be after start date/time';
+            }
+            
+            // Validate minimum 1 day difference
+            const timeDiff = end.getTime() - start.getTime();
+            const dayDiff = timeDiff / (1000 * 3600 * 24);
+            if (dayDiff < 1) {
+                newErrors.endDateTime = 'Parking duration must be at least 1 day';
             }
         }
 
@@ -144,6 +169,9 @@ export default function Home() {
     const handleDateTimeChange = (e) => {
         const { name, value } = e.target;
         
+        // Clear error when user starts typing
+        clearError(name);
+        
         // Update datetime inputs
         setDatetimeInputs(prev => ({
             ...prev,
@@ -161,6 +189,25 @@ export default function Home() {
                     startDate: date,
                     startTime: time12h
                 }));
+
+                // Update minimum end date to be at least 1 day after start date
+                if (date) {
+                    const startDate = new Date(date);
+                    const minEndDate = new Date(startDate);
+                    minEndDate.setDate(minEndDate.getDate() + 1);
+                    const minEndDateTimeLocal = minEndDate.toISOString().slice(0, 16);
+                    setMinEndDateTime(minEndDateTimeLocal);
+
+                    // If current end date is before new minimum, clear it
+                    if (datetimeInputs.endDateTime && new Date(datetimeInputs.endDateTime) < minEndDate) {
+                        setDatetimeInputs(prev => ({ ...prev, endDateTime: '' }));
+                        setSearchData(prev => ({
+                            ...prev,
+                            endDate: "",
+                            endTime: "12:00 AM"
+                        }));
+                    }
+                }
             } else if (name === 'endDateTime') {
                 setSearchData(prev => ({
                     ...prev,
@@ -176,6 +223,8 @@ export default function Home() {
                     startDate: "",
                     startTime: "12:00 AM"
                 }));
+                // Reset min end date
+                setMinEndDateTime('');
             } else if (name === 'endDateTime') {
                 setSearchData(prev => ({
                     ...prev,
@@ -186,17 +235,20 @@ export default function Home() {
         }
     }
 
-
     // Handle other input changes (airport, terminal)
     const handleInputChange = (e) => {
         const { name, value } = e.target;
+        
+        // Clear error when user starts typing
+        clearError(name);
+        
         setSearchData(prevState => ({
             ...prevState,
             [name]: value
         }));
     };
 
-        // Handle form submission with minimum 3-second loading
+    // Handle form submission with minimum 3-second loading
     const handleSubmit = async (e) => {
         e.preventDefault();
         
@@ -236,7 +288,7 @@ export default function Home() {
         }
     };
 
-        // Helper function to determine input border color
+    // Helper function to determine input border color
     const getInputBorderColor = (fieldName) => {
         return errors[fieldName] ? 'border-red-500' : 'border-gray-300';
     };
@@ -246,7 +298,7 @@ export default function Home() {
     }
 
     return (
-                <div className="min-h-screen flex flex-col bg-white">
+        <div className="min-h-screen flex flex-col bg-white">
             <Head>
                 <title>Compare Airport Parking | Best Deals at Heathrow</title>
                 <meta name="description" content="Compare and save on airport parking at Heathrow. Best prices guaranteed on meet & greet, park & ride, and onsite parking." />
@@ -341,6 +393,7 @@ export default function Home() {
                                         name="startDateTime"
                                         value={datetimeInputs.startDateTime}
                                         onChange={handleDateTimeChange}
+                                        min={minStartDateTime}
                                         className={`w-full p-3 border rounded-md text-black focus:ring-2 focus:ring-orange-500 focus:border-transparent ${getInputBorderColor('startDateTime')}`} 
                                     />
                                     {errors.startDateTime && (
@@ -360,6 +413,7 @@ export default function Home() {
                                         name="endDateTime"
                                         value={datetimeInputs.endDateTime}
                                         onChange={handleDateTimeChange}
+                                        min={minEndDateTime}
                                         className={`w-full p-3 text-black border rounded-md focus:ring-2 focus:ring-orange-500 focus:border-transparent ${getInputBorderColor('endDateTime')}`}
                                     />
                                     {errors.endDateTime && (
@@ -386,7 +440,7 @@ export default function Home() {
                     </div>
                 </section>
                 
-                {/* Trust Indicators */}
+                {/* Rest of your components remain the same */}
                 <section className="py-8 bg-gray-50 border-b">
                     <div className="container mx-auto px-4">
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
@@ -405,6 +459,105 @@ export default function Home() {
                             <div>
                                 <div className="text-2xl font-bold text-blue-600">24/7</div>
                                 <div className="text-sm text-gray-600">Customer Support</div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                
+                {/* Popular Services */}
+                <section className="py-12 bg-white">
+                    <div className="container mx-auto px-4">
+                        <h2 className="text-3xl font-bold text-center mb-2 text-gray-900">Popular Heathrow Parking Options</h2>
+                        <p className="text-center text-gray-600 mb-8">Choose the parking option thats right for you</p>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                            {/* Meet and Greet */}
+                            <div className="border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow duration-300">
+                                <div className="h-48 bg-blue-100 relative">
+                                    <Image 
+                                        src="/meet and greet.jpg" 
+                                        alt="Meet and Greet Parking" 
+                                        className="w-full h-full object-cover"
+                                        width={400}
+                                        height={300}
+                                    />
+                                    <div className="absolute top-4 left-4 bg-orange-500 text-white px-3 py-1 rounded-full text-sm font-medium">
+                                        Most Popular
+                                    </div>
+                                </div>
+                                <div className="p-6">
+                                    <h3 className="text-xl font-bold mb-2 text-gray-900">Meet & Greet</h3>
+                                    <p className="text-gray-600 mb-4">Meet at the terminal - no transfers needed</p>
+                                    <ul className="space-y-2 mb-6">
+                                        <li className="flex items-center">
+                                            <svg className="h-5 w-5 text-green-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                            </svg>
+                                            <span className="text-sm">Meet at terminal</span>
+                                        </li>
+                                        <li className="flex items-center">
+                                            <svg className="h-5 w-5 text-green-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                            </svg>
+                                            <span className="text-sm">Ideal for families</span>
+                                        </li>
+                                        <li className="flex items-center">
+                                            <svg className="h-5 w-5 text-green-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                            </svg>
+                                            <span className="text-sm">Secure compound</span>
+                                        </li>
+                                    </ul>
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-2xl font-bold text-gray-900">From £89.99</span>
+                                        <button className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors text-sm">
+                                            View Deals
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            {/* Park and Ride */}
+                            <div className="border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow duration-300">
+                                <div className="h-48 bg-blue-100">
+                                    <Image
+                                        src="/Park and ride.jpg" 
+                                        alt="Park and Ride" 
+                                        className="w-full h-full object-cover"
+                                        width={400}
+                                        height={300}
+                                    />
+                                </div>
+                                <div className="p-6">
+                                    <h3 className="text-xl font-bold mb-2 text-gray-900">Park & Ride</h3>
+                                    <p className="text-gray-600 mb-4">Park yourself and take a short shuttle bus</p>
+                                    <ul className="space-y-2 mb-6">
+                                        <li className="flex items-center">
+                                            <svg className="h-5 w-5 text-green-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                            </svg>
+                                            <span className="text-sm">Best value</span>
+                                        </li>
+                                        <li className="flex items-center">
+                                            <svg className="h-5 w-5 text-green-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                            </svg>
+                                            <span className="text-sm">Frequent transfers</span>
+                                        </li>
+                                        <li className="flex items-center">
+                                            <svg className="h-5 w-5 text-green-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                            </svg>
+                                            <span className="text-sm">Secure parking</span>
+                                        </li>
+                                    </ul>
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-2xl font-bold text-gray-900">From £49.99</span>
+                                        <button className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors text-sm">
+                                            View Deals
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>

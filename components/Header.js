@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
-export default function Header({ activeLink, setActiveLink }) {
+export default function Header() {
     const router = useRouter();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
 
@@ -12,12 +12,6 @@ export default function Header({ activeLink, setActiveLink }) {
     };
 
     const handleNavigation = (path) => {
-        setIsMenuOpen(false);
-        router.push(path);
-    };
-
-    const handleMenuClick = (link, path) => {
-        setActiveLink(link);
         setIsMenuOpen(false);
         router.push(path);
     };
@@ -81,7 +75,16 @@ export default function Header({ activeLink, setActiveLink }) {
                         <div className="py-2 space-y-0">
                             <button 
                                 className="w-full text-left px-4 py-4 text-blue-600 hover:bg-blue-50 transition-colors font-medium border-b border-gray-100 flex items-center justify-between"
-                                onClick={() => handleMenuClick('bookings', '/manage-booking')}
+                                onClick={() => handleNavigation('/')}
+                            >
+                                Home
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                </svg>
+                            </button>
+                            <button 
+                                className="w-full text-left px-4 py-4 text-blue-600 hover:bg-blue-50 transition-colors font-medium border-b border-gray-100 flex items-center justify-between"
+                                onClick={() => handleNavigation('/manage-booking')}
                             >
                                 My Bookings
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -90,7 +93,7 @@ export default function Header({ activeLink, setActiveLink }) {
                             </button>
                             <button 
                                 className="w-full text-left px-4 py-4 text-blue-600 hover:bg-blue-50 transition-colors font-medium flex items-center justify-between"
-                                onClick={() => handleMenuClick('help', '/help')}
+                                onClick={() => handleNavigation('/help')}
                             >
                                 Help & Contact
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
