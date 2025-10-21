@@ -382,7 +382,7 @@ export default function Compare() {
                                             ))}
                                         </div>
 
-                                        {/* Action Buttons */}
+                                        {/* Action Buttons 
                                         <div className="flex space-x-3">
                                             <button 
                                                 onClick={() => openModal(parking, 'photos')}
@@ -412,7 +412,9 @@ export default function Compare() {
                                                 Reviews ({parking.reviewCount})
                                             </button>
                                         </div>
+                                        */}
                                     </div>
+                                    
 
                                     {/* Parking Card Footer */}
                                     <div className="p-6 bg-gray-50">

@@ -127,8 +127,6 @@ export default function Tracking() {
 
     const handleReviewSubmit = (e) => {
         e.preventDefault();
-        // Here you would typically send the review to your backend
-        console.log('Review submitted:', reviewData);
         setReviewSubmitted(true);
         setShowReview(false);
         
