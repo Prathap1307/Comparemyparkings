@@ -18,8 +18,8 @@ export const metadata = {
   description: "Easily compare and book affordable airport parking at all major UK airports. Save time and money with CompareMyParkings.",
     icons: {
       icon: "/favicon.ico",
-      shortcut: "/favicon.png", // Using the generated favicon
-      apple: "/favicon.png", // Using the generated favicon
+      shortcut: "/favicon.png", 
+      apple: "/favicon.png", 
     },
   keywords: [
     "compare airport parking",

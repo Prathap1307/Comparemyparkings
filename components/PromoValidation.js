@@ -2,95 +2,104 @@
 
 import { useState, useEffect } from 'react';
 
-const PromoValidation = ({ promoCode, totalPrice, onValidationResult }) => {
+const PromoValidation = ({ 
+  promoCode, 
+  totalPrice, 
+  onValidationResult,
+  shouldValidate = false 
+}) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [promoData, setPromoData] = useState(null);
 
   useEffect(() => {
-    if (!promoCode) {
-      setPromoData(null);
-      setError('');
-      onValidationResult(null);
+    if (!shouldValidate || !promoCode) {
+      // Reset when not validating or no promo code
+      if (shouldValidate && !promoCode) {
+        setError('Please enter a promo code');
+        onValidationResult(null);
+      }
       return;
     }
 
-
-  const validatePromoCode = async () => {
-    setLoading(true);
-    setError('');
-    
-    try {
-      // Fetch promo codes from API
-      const response = await fetch('/api/promocodes');
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch promo codes');
-      }
-      
-      const data = await response.json();
-      
-      // Find matching promo code
-      const matchedPromo = data.find(item => 
-        item.promocode.toUpperCase()     === promoCode.toUpperCase()
-      );
-      
-      if (!matchedPromo) {
-        throw new Error('Promo code not found');
-      }
-      
-      // Validate the promo code
-      const validationResult = validatePromo(matchedPromo, totalPrice);
-      
-      if (validationResult.valid) {
-        setPromoData(matchedPromo);
-        setError('');
-        onValidationResult(validationResult);
-      } else {
-        throw new Error(validationResult.error);
-      }
-      
-    } catch (err) {
-      setError(err.message);
+    const validatePromoCode = async () => {
+      setLoading(true);
+      setError('');
       setPromoData(null);
-      onValidationResult(null);
-    } finally {
-      setLoading(false);
-    }
-  };
+      
+      try {
+        // Fetch promo codes from API
+        const response = await fetch('/api/promocodes');
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch promo codes');
+        }
+        
+        const data = await response.json();
 
-  }, [promoCode, totalPrice, onValidationResult]);
+        
+        // Find matching promo code - FIXED: Access promocode directly
+        const matchedPromo = data.find(item => {
+          const itemPromoCode = item.promocode;
+          return itemPromoCode?.toUpperCase() === promoCode.toUpperCase();
+        });
+
+        
+        if (!matchedPromo) {
+          throw new Error('Promo code not found');
+        }
+        
+        // Validate the promo code
+        const validationResult = validatePromo(matchedPromo, totalPrice);
+        
+        if (validationResult.valid) {
+          setPromoData(matchedPromo);
+          setError('');
+          onValidationResult(validationResult);
+        } else {
+          throw new Error(validationResult.error);
+        }
+        
+      } catch (err) {
+        setError(err.message);
+        setPromoData(null);
+        onValidationResult(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    validatePromoCode();
+  }, [promoCode, totalPrice, onValidationResult, shouldValidate]);
 
   const validatePromo = (promo, total) => {
+    // Extract values directly
     const promoType = promo.promovalidation;
     const valueType = promo.promovalue_type;
     const fromDate = promo.Fromdate;
     const fromTime = promo.Fromtime;
     const toDate = promo.Todate;
     const toTime = promo.Totime;
-    const minimumValue = parseFloat(promo.minimumvalue);
-    const promoLimit = parseFloat(promo.promolimit);
+    const minimumValue = parseFloat(promo.minimumvalue) || 0;
+    const promoLimit = parseFloat(promo.promolimit) || 0;
+    const promoFixed = parseFloat(promo.Promofixed) || 0;
+    const promoPercentage = parseFloat(promo.Promopercenatge) || 0;
 
-    console.log("value",
-        promoType
-    )
     
-    // Validate date if it's fixedDate type
-    if (promoType === 'fixedDate') {
-      const currentDate = new Date();
-      const fromDateTime = new Date(`${fromDate}T${fromTime}`);
-      const toDateTime = new Date(`${toDate}T${toTime}`);
-      
-      if (currentDate < fromDateTime || currentDate > toDateTime) {
-        return {
-          valid: false,
-          error: 'This promo code has expired'
-        };
-      }
+    // Validate date range
+    const currentDate = new Date();
+    const fromDateTime = new Date(`${fromDate}T${fromTime}`);
+    const toDateTime = new Date(`${toDate}T${toTime}`);
+    
+    if (currentDate < fromDateTime || currentDate > toDateTime) {
+      return {
+        valid: false,
+        error: 'This promo code is not valid at this time'
+      };
     }
     
     // Validate minimum value
-    if (total < minimumValue) {
+    if (minimumValue > 0 && total < minimumValue) {
       return {
         valid: false,
         error: `Minimum purchase of £${minimumValue} required for this promo`
@@ -98,37 +107,30 @@ const PromoValidation = ({ promoCode, totalPrice, onValidationResult }) => {
     }
     
     // Calculate discount
-    let discount = 0;
     let discountAmount = 0;
-    console.log("value",valueType)
+    
     if (valueType === 'percentage') {
-      const percentage = parseFloat(promo.Promopercenatge);
-      console.log("percentage",percentage)
-      discountAmount = (total * percentage) / 100;
-      console.log("discountAmount",discountAmount)
-      discount = percentage;
-      console.log("discount",discount)
-    } else {
-      discountAmount = parseFloat(promo.Promofixed);
-      discount = discountAmount;
+      discountAmount = (total * promoPercentage) / 100;
+      
+      // Apply promo limit for percentage discounts
+      if (promoLimit > 0 && discountAmount > promoLimit) {
+        discountAmount = promoLimit;
+      }
+    } else if (valueType === 'fixed') {
+      discountAmount = promoFixed;
     }
     
-    // Apply promo limit
-    if (discountAmount > promoLimit) {
-      discountAmount = promoLimit;
-    }
-    
-    const newTotal = total - discountAmount;
+    const newTotal = Math.max(0, total - discountAmount);
     
     return {
       valid: true,
       originalTotal: total,
       discountAmount,
       newTotal,
-      discountPercentage: valueType === 'percentage' ? parseFloat(promo.Promopercenatge.N) : null,
+      discountPercentage: valueType === 'percentage' ? promoPercentage : null,
       promoLimit,
       minimumValue,
-      message: `You saved £${discountAmount}`
+      message: `You saved £${discountAmount.toFixed(2)}`
     };
   };
 

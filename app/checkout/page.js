@@ -110,9 +110,12 @@ export default function Checkout() {
     customerInstruction: ''
   });
 
+
+
   const [promoCode, setPromoCode] = useState('');
   const [appliedPromo, setAppliedPromo] = useState(null);
   const [showPromoInput, setShowPromoInput] = useState(false);
+  const [shouldValidatePromo, setShouldValidatePromo] = useState(false);
 
     // Update the handleBooking function
 
@@ -201,13 +204,6 @@ export default function Checkout() {
                   offerDetails: bookingData.offerDetails || 'None',
               }),
           });
-          
-          if (emailResponse.ok) {
-              console.log("Email sent successfully.");
-          } else {
-              const errorData = await emailResponse.json();
-              console.error('Email failed to send:', errorData.error || 'Unknown error');
-          }
 
           // Save to localStorage for confirmation page
           localStorage.setItem('bookingConfirmation', JSON.stringify(completeBooking));
@@ -331,25 +327,30 @@ export default function Checkout() {
   };
 
   const handlePromoCodeApply = () => {
-    if (!promoCode.trim()) {
-      alert('Please enter a promo code');
-      return;
-    }
-    // The PromoValidation component will automatically validate when promoCode changes
-  };
+  if (!promoCode.trim()) {
+    alert('Please enter a promo code');
+    return;
+  }
+  // Trigger validation by setting shouldValidate to true
+  setShouldValidatePromo(true);
+};
 
-  const handlePromoValidationResult = (result) => {
-    if (result) {
-      setAppliedPromo(result);
-    } else {
-      setAppliedPromo(null);
-    }
-  };
-
-  const handleRemovePromo = () => {
-    setPromoCode('');
+const handlePromoValidationResult = (result) => {
+  if (result && result.valid) {
+    setAppliedPromo(result);
+  } else {
     setAppliedPromo(null);
-  };
+    // Keep shouldValidate as true to show error messages
+    setShouldValidatePromo(true);
+  }
+};
+
+const handleRemovePromo = () => {
+  setPromoCode('');
+  setAppliedPromo(null);
+  setShouldValidatePromo(false);
+  setShowPromoInput(false);
+};
 
   if (!bookingData) {
     return (
@@ -553,7 +554,8 @@ export default function Checkout() {
                   </div>
                 </div>
               </div>
-              {/* Add this after the customer instruction section */}
+
+              {/* promocode */}
               <div>
                 <h3 className="text-lg font-semibold text-gray-800 mb-4">Promo Code</h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
@@ -567,6 +569,14 @@ export default function Checkout() {
                           placeholder="Enter promo code"
                           className="flex-1 p-3 border border-gray-300 rounded-md text-black"
                         />
+                        <button
+                          type="button"
+                          onClick={handlePromoCodeApply}
+                          disabled={!promoCode.trim()}
+                          className="bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed whitespace-nowrap"
+                        >
+                          Apply
+                        </button>
                       </div>
                     ) : (
                       <button
@@ -578,17 +588,19 @@ export default function Checkout() {
                       </button>
                     )}
                     
-                    {/* Promo validation component */}
-                    {promoCode && (
+                    {/* Promo validation component - Only show when we have a result */}
+                    {/* Promo validation component - Only show when we should validate */}
+                    {shouldValidatePromo && (
                       <PromoValidation
                         promoCode={promoCode}
                         totalPrice={calculateOriginalTotal()}
                         onValidationResult={handlePromoValidationResult}
+                        shouldValidate={shouldValidatePromo}
                       />
                     )}
                     
                     {/* Show applied promo details */}
-                    {appliedPromo && (
+                    {appliedPromo && appliedPromo.valid && (
                       <div className="mt-3 p-3 bg-green-50 rounded-md">
                         <div className="flex justify-between items-center">
                           <div>
@@ -608,7 +620,6 @@ export default function Checkout() {
                   </div>
                 </div>
               </div>
-
 
               
               {/* Stripe Payment Element */}
