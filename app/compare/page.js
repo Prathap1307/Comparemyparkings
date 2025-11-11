@@ -413,7 +413,7 @@ export default function Compare() {
                                             </button>
                                         </div>
                                         */}
-                                    </div>
+                                    </div>``
                                     
 
                                     {/* Parking Card Footer */}

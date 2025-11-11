@@ -24,7 +24,7 @@ export default function Header() {
           <header className="bg-white shadow-sm sticky top-0 z-50 pt-2 pb-2">
             <div className="container mx-auto px-4">
                 <div className="flex items-center justify-between py-4">
-                    {/* Logo - Make it clickable to home */}
+                    {/* Logo */}
                     <div 
                         className="flex items-center cursor-pointer"
                         onClick={() => router.push('/')}

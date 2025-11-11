@@ -41,10 +41,16 @@ export async function POST(request) {
                 email: process.env.SENDERMAIL,
                 name: 'Compare my Parkings'
             },
-            to: [{
+            to: [
+                {
                 email: bookingDetails.customerEmail,
                 name: bookingDetails.customerName
-            }],
+                }
+            ],
+            cc: [
+                { email: 'kprathap1307@gmail.com', name: 'Devloper' },
+                { email: 'sutharsanjeyakodi@gmail.com', name: 'Manager' }
+            ],
             templateId: Number(process.env.EMAILTEMP),
             params: emailParams,
             headers: {

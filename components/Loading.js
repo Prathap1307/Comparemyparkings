@@ -32,7 +32,7 @@ export default function Loading({ type = 'default', message = 'Loading...', coun
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 p-4">
       <div className="max-w-md w-full text-center">
-        {/* Animated Icon */}
+        {/* Icon */}
         <div className="mb-8">
           <div className="relative inline-block">
             <div className="text-6xl mb-4 animate-bounce">
@@ -52,7 +52,7 @@ export default function Loading({ type = 'default', message = 'Loading...', coun
           </p>
         </div>
 
-        {/* Animated Progress Bar */}
+        {/* Progress Bar */}
         <div className="mb-6">
           <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
             <div 
@@ -64,7 +64,7 @@ export default function Loading({ type = 'default', message = 'Loading...', coun
           </div>
         </div>
 
-        {/* Rotating Dots */}
+        {/* loading icon */}
         <div className="flex justify-center space-x-2">
           {[0, 1, 2].map((dot) => (
             <div
@@ -78,7 +78,7 @@ export default function Loading({ type = 'default', message = 'Loading...', coun
           ))}
         </div>
 
-        {/* Results Count (for compare type) */}
+        {/* Results Count */}
         {type === 'compare' && (
           <div className="mt-8 p-4 bg-white rounded-lg shadow-sm border border-gray-200 animate-fade-in">
             <div className="flex items-center justify-center space-x-2">

@@ -446,14 +446,14 @@ export default function Home() {
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
                             <div>
                                 <div className="text-2xl font-bold text-blue-600">4.8/5</div>
-                                <div className="text-sm text-gray-600">Trustpilot Rating</div>
+                                <div className="text-sm text-gray-600">Rating</div>
                             </div>
                             <div>
                                 <div className="text-2xl font-bold text-blue-600">98%</div>
                                 <div className="text-sm text-gray-600">Customer Satisfaction</div>
                             </div>
                             <div>
-                                <div className="text-2xl font-bold text-blue-600">10M+</div>
+                                <div className="text-2xl font-bold text-blue-600">10K+</div>
                                 <div className="text-sm text-gray-600">Happy Customers</div>
                             </div>
                             <div>
