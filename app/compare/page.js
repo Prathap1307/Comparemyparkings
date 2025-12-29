@@ -20,6 +20,10 @@ export default function Compare() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
+    const normalize = str =>
+    (str || '').toLowerCase().trim();
+
+
     // Calculate duration from search data
     const calculateDuration = () => {
         if (!searchData?.startDate || !searchData?.endDate) return 0;
@@ -53,50 +57,61 @@ export default function Compare() {
     
     // Fetch parking companies data from API
     useEffect(() => {
-        const fetchParkingData = async () => {
-            try {
-                setLoading(true);
-                const response = await fetch('/api/companys');
-                
-                if (!response.ok) {
-                    throw new Error('Failed to fetch parking data');
-                }
-                
-                const data = await response.json();
-                
-                // Transform the API data to match our frontend structure
-                const transformedData = data.map(company => ({
-                    id: company.id,
-                    name: company.name,
-                    title: company.name, // Added for checkout page compatibility
-                    type: company.type,
-                    price: calculatePrice(company.pricingTiers, duration),
-                    rating: parseFloat(company.Stars),
-                    reviewCount: parseInt(company.StarredRatingsCount),
-                    reviews: parseInt(company.StarredRatingsCount), // Added for checkout page
-                    distance: company.distance,
-                    transferTime: company.transferTime,
-                    features: company.AvailableFacilities.split('\n-.\n').filter(f => f.trim()),
-                    logo: company.Displaypicture,
-                    images: company.images,
-                    mapUrl: company.mapUrl,
-                    reviews: company.reviews || [], // Ensure reviews array exists
-                    pricingTiers: company.pricingTiers,
-                    description: `${company.type} parking at ${company.distance} from terminal`, // Added for checkout
-                    services: company.AvailableFacilities.split('\n-.\n').filter(f => f.trim()).slice(0, 3) // Added for checkout
-                }));
-                
-                setParkingOptions(transformedData);
-            } catch (err) {
-                setError(err.message);
-                console.error('Error fetching parking data:', err);
-            } finally {
-                setLoading(false);
-            }
-        };
+    if (!searchData?.airport) return;
 
-        fetchParkingData();
-    }, [duration]);
+    const fetchParkingData = async () => {
+        try {
+        setLoading(true);
+
+        const res = await fetch('/api/companys');
+        if (!res.ok) throw new Error('Failed to fetch companies');
+
+        const data = await res.json();
+
+        // ✅ FILTER BY SELECTED AIRPORT
+        const filtered = data.filter(company =>
+            normalize(company.Location) === normalize(searchData.airport)
+        );
+
+        const transformed = filtered.map(company => ({
+            id: company.id,
+            name: company.name,
+            title: company.name,
+            type: company.type,
+            price: calculatePrice(company.pricingTiers, duration),
+            rating: Number(company.Stars),
+            reviewCount: Number(company.StarredRatingsCount),
+            distance: company.distance,
+            transferTime: company.transferTime,
+            features: company.AvailableFacilities
+            ?.split('\n-.\n')
+            .filter(Boolean) || [],
+            logo: company.Displaypicture,
+            images: company.images || [],
+            mapUrl: company.mapUrl,
+            reviews: company.reviews || [],
+            pricingTiers: company.pricingTiers,
+            description: `${company.type} parking at ${company.distance}`,
+            services:
+            company.AvailableFacilities
+                ?.split('\n-.\n')
+                .filter(Boolean)
+                .slice(0, 3) || [],
+        }));
+
+        setParkingOptions(transformed);
+        setError(null);
+        } catch (err) {
+        console.error(err);
+        setError(err.message);
+        } finally {
+        setLoading(false);
+        }
+    };
+
+    fetchParkingData();
+    }, [searchData, duration]);
+
 
     // Load search data from localStorage
     useEffect(() => {

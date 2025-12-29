@@ -4,441 +4,248 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Head from 'next/head';
 import Image from 'next/image';
-import Header from '@/components/Header';
-import Footer from '@/components/Footer';
-import Loading from '@/components/Loading';
+import Header from '../components/Header';
+import Footer from '../components/Footer';
+import Loading from '../components/Loading';
 
 export default function Home() {
-    const router = useRouter();
-    const [isLoading, setIsLoading] = useState(false);
-    const [loadingType, setLoadingType] = useState('default');
-    const [errors, setErrors] = useState({});
-    const [minStartDateTime, setMinStartDateTime] = useState('');
-    const [minEndDateTime, setMinEndDateTime] = useState('');
+  const router = useRouter();
 
-    // State for form data
-    const [searchData, setSearchData] = useState({
-        airport: "",
-        terminal: "",
-        startDate: "",
-        startTime: "",
-        endDate: "",
-        endTime: "",
-    });
+  /* ---------------- STATE ---------------- */
+  const [isLoading, setIsLoading] = useState(false);
+  const [loadingType, setLoadingType] = useState('default');
+  const [errors, setErrors] = useState({});
 
-    const [datetimeInputs, setDatetimeInputs] = useState({
-        startDateTime: "",
-        endDateTime: ""
-    });
+  const [locations, setLocations] = useState([]);
 
-    // State for active navigation link
-    const [activeLink, setActiveLink] = useState('Home');
+  const [minStartDateTime, setMinStartDateTime] = useState('');
+  const [minEndDateTime, setMinEndDateTime] = useState('');
 
-    useEffect(() => {
-        // Set minimum datetime for start date (current datetime)
-        const now = new Date();
-        // Round to nearest 15 minutes
-        const minutes = Math.ceil(now.getMinutes() / 15) * 15;
-        now.setMinutes(minutes);
-        const currentDateTimeLocal = now.toISOString().slice(0, 16);
-        setMinStartDateTime(currentDateTimeLocal);
+  const [searchData, setSearchData] = useState({
+    airport: '',
+    startDate: '',
+    startTime: '',
+    endDate: '',
+    endTime: '',
+  });
 
-        // Convert date and time to datetime-local format
-        const convertToDateTimeLocal = (date, time) => {
-            if (!date) return '';
-            
-            const time24h = convertTo24Hour(time);
-            return `${date}T${time24h}`;
-        };
+  const [datetimeInputs, setDatetimeInputs] = useState({
+    startDateTime: '',
+    endDateTime: '',
+  });
 
-        const savedSearchData = localStorage.getItem('parkingSearch');
-        if (savedSearchData) {
-            try {
-                const parsedData = JSON.parse(savedSearchData);
-                setSearchData(prevState => ({
-                    ...prevState,
-                    ...parsedData
-                }));
-                
-                // Convert saved date/time to datetime-local format for inputs
-                if (parsedData.startDate && parsedData.startTime) {
-                    const startDateTime = convertToDateTimeLocal(parsedData.startDate, parsedData.startTime);
-                    setDatetimeInputs(prev => ({ ...prev, startDateTime }));
-                    
-                    // Set minimum end date based on saved start date
-                    if (parsedData.startDate) {
-                        const startDate = new Date(parsedData.startDate);
-                        const minEndDate = new Date(startDate);
-                        minEndDate.setDate(minEndDate.getDate() + 1);
-                        const minEndDateTimeLocal = minEndDate.toISOString().slice(0, 16);
-                        setMinEndDateTime(minEndDateTimeLocal);
-                    }
-                }
-                if (parsedData.endDate && parsedData.endTime) {
-                    const endDateTime = convertToDateTimeLocal(parsedData.endDate, parsedData.endTime);
-                    setDatetimeInputs(prev => ({ ...prev, endDateTime }));
-                }
-            } catch (error) {
-                console.error("Error parsing saved search data:", error);
-            }
-        }   
-    }, []);
+  /* ---------------- INIT DATE LIMITS ---------------- */
+  useEffect(() => {
+    const now = new Date();
+    const minutes = Math.ceil(now.getMinutes() / 15) * 15;
+    now.setMinutes(minutes);
+    setMinStartDateTime(now.toISOString().slice(0, 16));
+  }, []);
 
-    
-    // Validation function
-    const validateForm = () => {
-        const newErrors = {};
-        
-        if (!searchData.airport.trim()) {
-            newErrors.airport = 'Please select an airport';
-        }
-        
-        if (!searchData.terminal.trim()) {
-            newErrors.terminal = 'Please select a terminal';
-        }
-        
-        if (!searchData.startDate.trim()) {
-            newErrors.startDateTime = 'Please select start date and time';
-        }
-        
-        if (!searchData.endDate.trim()) {
-            newErrors.endDateTime = 'Please select end date and time';
-        }
-        
-        // Validate that end date/time is after start date/time
-        if (searchData.startDate && searchData.endDate) {
-            const start = new Date(`${searchData.startDate}T${convertTo24Hour(searchData.startTime)}`);
-            const end = new Date(`${searchData.endDate}T${convertTo24Hour(searchData.endTime)}`);
-            
-            if (end <= start) {
-                newErrors.endDateTime = 'End date/time must be after start date/time';
-            }
-            
-            // Validate minimum 1 day difference
-            const timeDiff = end.getTime() - start.getTime();
-            const dayDiff = timeDiff / (1000 * 3600 * 24);
-            if (dayDiff < 1) {
-                newErrors.endDateTime = 'Parking duration must be at least 1 day';
-            }
-        }
+  /* ---------------- LOAD LOCATIONS (SAFE) ---------------- */
+  useEffect(() => {
+    fetch('/api/locations')
+      .then(async res => {
+        if (!res.ok) return [];
+        const text = await res.text();
+        return text ? JSON.parse(text) : [];
+      })
+      .then(data => setLocations(Array.isArray(data) ? data : []))
+      .catch(() => setLocations([]));
+  }, []);
 
-        setErrors(newErrors);
-        return Object.keys(newErrors).length === 0;
-    };
+  /* ---------------- HELPERS ---------------- */
+  const clearError = name =>
+    setErrors(prev => ({ ...prev, [name]: '' }));
 
-    // Clear specific error when user starts typing
-    const clearError = (fieldName) => {
-        setErrors(prev => ({
-            ...prev,
-            [fieldName]: ''
-        }));
-    };
+  const to24h = time12 => {
+    if (!time12) return '00:00';
+    const [time, mod] = time12.split(' ');
+    let [h, m] = time.split(':');
+    if (h === '12') h = '00';
+    if (mod === 'PM') h = Number(h) + 12;
+    return `${String(h).padStart(2, '0')}:${m || '00'}`;
+  };
 
-    // Convert 12-hour time to 24-hour time
-    const convertTo24Hour = (time12h) => {
-        if (!time12h) return '00:00';
-        
-        const [time, modifier] = time12h.split(' ');
-        let [hours, minutes] = time.split(':');
-        
-        if (hours === '12') {
-            hours = '00';
-        }
-        
-        if (modifier === 'PM') {
-            hours = parseInt(hours, 10) + 12;
-        }
-        
-        return `${hours.toString().padStart(2, '0')}:${minutes || '00'}`;
-    };
+  const to12h = time24 => {
+    if (!time24) return '12:00 AM';
+    let [h, m] = time24.split(':');
+    h = Number(h);
+    const mod = h >= 12 ? 'PM' : 'AM';
+    h = h % 12 || 12;
+    return `${h}:${m} ${mod}`;
+  };
 
-    // Convert 24-hour time to 12-hour time
-    const convertTo12Hour = (time24h) => {
-        if (!time24h) return '12:00 AM';
-        
-        let [hours, minutes] = time24h.split(':');
-        hours = parseInt(hours, 10);
-        
-        const modifier = hours >= 12 ? 'PM' : 'AM';
-        hours = hours % 12 || 12;
-        
-        return `${hours}:${minutes} ${modifier}`;
-    };
+  /* ---------------- INPUT HANDLERS ---------------- */
+  const handleInputChange = e => {
+    clearError(e.target.name);
+    setSearchData(prev => ({
+      ...prev,
+      [e.target.name]: e.target.value,
+    }));
+  };
 
-    // Handle datetime-local input changes and split into date/time
-    const handleDateTimeChange = (e) => {
-        const { name, value } = e.target;
-        
-        // Clear error when user starts typing
-        clearError(name);
-        
-        // Update datetime inputs
-        setDatetimeInputs(prev => ({
-            ...prev,
-            [name]: value
-        }));
+  const handleDateTimeChange = e => {
+    const { name, value } = e.target;
+    clearError(name);
 
-        // Split datetime-local value into separate date and time
-        if (value) {
-            const [date, time] = value.split('T');
-            const time12h = convertTo12Hour(time);
-            
-            if (name === 'startDateTime') {
-                setSearchData(prev => ({
-                    ...prev,
-                    startDate: date,
-                    startTime: time12h
-                }));
+    setDatetimeInputs(prev => ({ ...prev, [name]: value }));
 
-                // Update minimum end date to be at least 1 day after start date
-                if (date) {
-                    const startDate = new Date(date);
-                    const minEndDate = new Date(startDate);
-                    minEndDate.setDate(minEndDate.getDate() + 1);
-                    const minEndDateTimeLocal = minEndDate.toISOString().slice(0, 16);
-                    setMinEndDateTime(minEndDateTimeLocal);
+    if (!value) return;
 
-                    // If current end date is before new minimum, clear it
-                    if (datetimeInputs.endDateTime && new Date(datetimeInputs.endDateTime) < minEndDate) {
-                        setDatetimeInputs(prev => ({ ...prev, endDateTime: '' }));
-                        setSearchData(prev => ({
-                            ...prev,
-                            endDate: "",
-                            endTime: "12:00 AM"
-                        }));
-                    }
-                }
-            } else if (name === 'endDateTime') {
-                setSearchData(prev => ({
-                    ...prev,
-                    endDate: date,
-                    endTime: time12h
-                }));
-            }
-        } else {
-            // Clear values if input is empty
-            if (name === 'startDateTime') {
-                setSearchData(prev => ({
-                    ...prev,
-                    startDate: "",
-                    startTime: "12:00 AM"
-                }));
-                // Reset min end date
-                setMinEndDateTime('');
-            } else if (name === 'endDateTime') {
-                setSearchData(prev => ({
-                    ...prev,
-                    endDate: "",
-                    endTime: "12:00 AM"
-                }));
-            }
-        }
+    const [date, time] = value.split('T');
+    const time12 = to12h(time);
+
+    if (name === 'startDateTime') {
+      setSearchData(prev => ({
+        ...prev,
+        startDate: date,
+        startTime: time12,
+      }));
+
+      const minEnd = new Date(date);
+      minEnd.setDate(minEnd.getDate() + 1);
+      setMinEndDateTime(minEnd.toISOString().slice(0, 16));
+    } else {
+      setSearchData(prev => ({
+        ...prev,
+        endDate: date,
+        endTime: time12,
+      }));
+    }
+  };
+
+  /* ---------------- VALIDATION ---------------- */
+  const validateForm = () => {
+    const e = {};
+
+    if (!searchData.airport) e.airport = 'Please select an airport';
+    if (!searchData.startDate) e.startDateTime = 'Select start date & time';
+    if (!searchData.endDate) e.endDateTime = 'Select end date & time';
+
+    if (searchData.startDate && searchData.endDate) {
+      const start = new Date(
+        `${searchData.startDate}T${to24h(searchData.startTime)}`
+      );
+      const end = new Date(
+        `${searchData.endDate}T${to24h(searchData.endTime)}`
+      );
+
+      if (end <= start) {
+        e.endDateTime = 'End date must be after start date';
+      }
     }
 
-    // Handle other input changes (airport, terminal)
-    const handleInputChange = (e) => {
-        const { name, value } = e.target;
-        
-        // Clear error when user starts typing
-        clearError(name);
-        
-        setSearchData(prevState => ({
-            ...prevState,
-            [name]: value
-        }));
-    };
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  };
 
-    // Handle form submission with minimum 3-second loading
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        
-        // Validate form before submission
-        if (!validateForm()) {
-            // Scroll to first error
-            const firstErrorField = Object.keys(errors)[0];
-            const errorElement = document.querySelector(`[name="${firstErrorField}"]`);
-            if (errorElement) {
-                errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                errorElement.focus();
-            }
-            return;
-        }
-        
-        // Save to localStorage
-        localStorage.setItem('parkingSearch', JSON.stringify(searchData));
-        
-        // Show loading with compare type
-        setIsLoading(true);
-        setLoadingType('compare');
-        
-        // Start timing for minimum 3 seconds
-        const startTime = Date.now();
-        
-        try {
-            const elapsedTime = Date.now() - startTime;
-            const remainingTime = Math.max(3000 - elapsedTime, 0);
-            
-            await new Promise(resolve => setTimeout(resolve, remainingTime));
-            
-        } catch (error) {
-            console.error('Error during search:', error);
-        } finally {
-            // Redirect to compare page
-            router.push('/compare?loading=compare');
-        }
-    };
+  /* ---------------- SUBMIT ---------------- */
+  const handleSubmit = async e => {
+    e.preventDefault();
+    if (!validateForm()) return;
 
-    // Helper function to determine input border color
-    const getInputBorderColor = (fieldName) => {
-        return errors[fieldName] ? 'border-red-500' : 'border-gray-300';
-    };
+    localStorage.setItem('parkingSearch', JSON.stringify(searchData));
 
-    if (isLoading) {
-        return <Loading type={loadingType} count={76} />;
-    }
+    setIsLoading(true);
+    setLoadingType('compare');
 
-    return (
+    await new Promise(r => setTimeout(r, 3000));
+    router.push('/compare?loading=compare');
+  };
+
+  if (isLoading) {
+    return <Loading type={loadingType} count={76} />;
+  }
+
+  /* ---------------- UI ---------------- */
+      return (
         <div className="min-h-screen flex flex-col bg-white">
-            <Head>
-                <title>Compare Airport Parking | Best Deals at Heathrow</title>
-                <meta name="description" content="Compare and save on airport parking at Heathrow. Best prices guaranteed on meet & greet, park & ride, and onsite parking." />
-            </Head>
-            
-            {/* Main header */}
-            <Header />
-            
-            {/* Main content */}
-            <main className="flex-grow">
-                {/* Hero Section */}
-                <section className="relative bg-gradient-to-r from-blue-600 to-blue-800 py-16">
-                    <div className="container mx-auto px-4 text-center">
-                        <h1 className="text-4xl font-bold text-white mb-4">Airport Parking Made Simple</h1>
-                        <p className="text-xl text-blue-100 mb-8">Compare prices across all major providers</p>
-                        
-                        {/* Search form - Holiday Extras style */}
-                        <div className="bg-white p-6 rounded-lg shadow-xl w-[80%] mx-auto">
-                            <div className="flex items-center mb-4">
-                                <div className="w-3 h-3 bg-orange-500 rounded-full mr-2"></div>
-                                <span className="text-sm font-medium text-gray-700">Compare airport parking deals</span>
-                            </div>
-                            
-                            <form className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-4" onSubmit={handleSubmit}>
-                                <div className="lg:col-span-2">
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Airport</label>
-                                    <div className="relative">
-                                        <select
-                                            name="airport"
-                                            value={searchData.airport}
-                                            onChange={handleInputChange}
-                                            className={`w-full p-3 border rounded-md focus:ring-2 focus:ring-orange-500 focus:border-transparent appearance-none text-black bg-white ${getInputBorderColor('airport')}`}
-                                        >
-                                            <option value="">Select Airport</option>
-                                            <option value="Heathrow">London Heathrow (LHR)</option>
-                                            <option disabled value="Gatwick">London Gatwick (LGW)</option>
-                                            <option disabled value="Stansted">London Stansted (STN)</option>
-                                            <option disabled value="Luton">London Luton (LTN)</option>
-                                        </select>
-                                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-                                            <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                                <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                                            </svg>
-                                        </div>
-                                    </div>
-                                    {errors.airport && (
-                                        <p className="text-red-500 text-xs mt-1 flex items-center">
-                                            <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                                            </svg>
-                                            {errors.airport}
-                                        </p>
-                                    )}
-                                </div>
-                                
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Terminal</label>
-                                    <div className="relative">
-                                        <select 
-                                            name="terminal"
-                                            value={searchData.terminal}
-                                            onChange={handleInputChange}
-                                            className={`w-full p-3 border rounded-md text-black focus:ring-2 focus:ring-orange-500 focus:border-transparent appearance-none bg-white ${getInputBorderColor('terminal')}`}
-                                        >
-                                            <option value="">Select Terminal</option>
-                                            <option>All terminals</option>
-                                            <option>Terminal 2</option>
-                                            <option>Terminal 3</option>
-                                            <option>Terminal 4</option>
-                                            <option>Terminal 5</option>
-                                        </select>
-                                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-                                            <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                                <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                                            </svg>
-                                        </div>
-                                    </div>
-                                    {errors.terminal && (
-                                        <p className="text-red-500 text-xs mt-1 flex items-center">
-                                            <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                                            </svg>
-                                            {errors.terminal}
-                                        </p>
-                                    )}
-                                </div>
-                                
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">From Date & Time</label>
-                                    <input 
-                                        type="datetime-local" 
-                                        name="startDateTime"
-                                        value={datetimeInputs.startDateTime}
-                                        onChange={handleDateTimeChange}
-                                        min={minStartDateTime}
-                                        className={`w-full p-3 border rounded-md text-black focus:ring-2 focus:ring-orange-500 focus:border-transparent ${getInputBorderColor('startDateTime')}`} 
-                                    />
-                                    {errors.startDateTime && (
-                                        <p className="text-red-500 text-xs mt-1 flex items-center">
-                                            <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                                            </svg>
-                                            {errors.startDateTime}
-                                        </p>
-                                    )}
-                                </div>
-                                
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">To Date & Time</label>
-                                    <input 
-                                        type="datetime-local" 
-                                        name="endDateTime"
-                                        value={datetimeInputs.endDateTime}
-                                        onChange={handleDateTimeChange}
-                                        min={minEndDateTime}
-                                        className={`w-full p-3 text-black border rounded-md focus:ring-2 focus:ring-orange-500 focus:border-transparent ${getInputBorderColor('endDateTime')}`}
-                                    />
-                                    {errors.endDateTime && (
-                                        <p className="text-red-500 text-xs mt-1 flex items-center">
-                                            <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                                            </svg>
-                                            {errors.endDateTime}
-                                        </p>
-                                    )}
-                                </div>
-                                
-                                <div className="flex items-end lg:col-span-2">
-                                    <button type="submit" className="w-full bg-orange-500 text-white py-3 px-6 rounded-md hover:bg-orange-600 font-medium cursor-pointer transition-colors text-lg h-[52px] flex items-center justify-center whitespace-nowrap">
-                                        Find Parking
-                                    </button>
-                                </div>
-                            </form>
-                            
-                            <div className="mt-4 text-sm text-gray-600">
-                                <p>💡 <strong>Top tip:</strong> Book early to secure the best prices!</p>
-                            </div>
-                        </div>
+          <Head>
+            <title>Compare Airport Parking | Best Deals</title>
+            <meta
+              name="description"
+              content="Compare airport parking prices and save up to 60% on meet & greet and park & ride."
+            />
+          </Head>
+
+          <Header />
+
+          <main className="flex-grow">
+            {/* HERO */}
+            <section className="bg-gradient-to-r from-blue-600 to-blue-800 py-16">
+              <div className="container mx-auto px-4 text-center">
+                <h1 className="text-4xl font-bold text-white mb-4">
+                  Airport Parking Made Simple
+                </h1>
+                <p className="text-xl text-blue-100 mb-8">
+                  Compare prices across all major providers
+                </p>
+
+                <div className="bg-white p-6 rounded-lg shadow-xl w-[80%] mx-auto">
+                  <form
+                    onSubmit={handleSubmit}
+                    className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4"
+                  >
+                    {/* AIRPORT */}
+                    <div className="lg:col-span-2">
+                      <label className="text-sm font-medium text-black">Airport</label>
+                      <select
+                        name="airport"
+                        value={searchData.airport}
+                        onChange={handleInputChange}
+                        className="w-full p-3 border rounded-md bg-white text-black"
+                      >
+                        <option value="">Select Airport</option>
+                        {locations.map(loc => (
+                          <option key={loc.id} value={loc.location_name}>
+                            {loc.location_name}
+                          </option>
+                        ))}
+                      </select>
+                      {errors.airport && (
+                        <p className="text-xs text-red-500">{errors.airport}</p>
+                      )}
                     </div>
-                </section>
+
+                    {/* FROM */}
+                    <div>
+                      <label className="text-sm font-medium text-black">From</label>
+                      <input
+                        type="datetime-local"
+                        name="startDateTime"
+                        min={minStartDateTime}
+                        value={datetimeInputs.startDateTime}
+                        onChange={handleDateTimeChange}
+                        className="w-full p-3 border rounded-md text-black"
+                      />
+                    </div>
+
+                    {/* TO */}
+                    <div>
+                      <label className="text-sm font-medium text-black">To</label>
+                      <input
+                        type="datetime-local"
+                        name="endDateTime"
+                        min={minEndDateTime}
+                        value={datetimeInputs.endDateTime}
+                        onChange={handleDateTimeChange}
+                        className="w-full p-3 border rounded-md text-black"
+                      />
+                    </div>
+
+                    <div className="flex items-end lg:col-span-2">
+                      <button
+                        type="submit"
+                        className="w-full bg-orange-500 text-white py-3 rounded-md text-lg hover:bg-orange-600"
+                      >
+                        Find Parking
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </section>
                 
                 {/* Rest of your components remain the same */}
                 <section className="py-8 bg-gray-50 border-b">
