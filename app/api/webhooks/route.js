@@ -1,3 +1,5 @@
+export const runtime = "nodejs";
+
 // app/api/webhooks/route.ts
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';

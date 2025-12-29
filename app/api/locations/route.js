@@ -1,3 +1,5 @@
+export const runtime = "nodejs";
+
 // app/api/locations/route.js
 import {
   createItem,

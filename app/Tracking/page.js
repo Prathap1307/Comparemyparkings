@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Head from 'next/head';
 import Image from 'next/image';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
@@ -157,11 +156,6 @@ export default function Tracking() {
 
     return (
         <div className="min-h-screen flex flex-col bg-gray-50">
-            <Head>
-                <title>Track Your Car | Airport Parking</title>
-                <meta name="description" content="Track your car's current status and location" />
-            </Head>
-            
             <Header />
             
             <main className="flex-grow py-8">

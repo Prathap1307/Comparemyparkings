@@ -1,3 +1,5 @@
+export const runtime = "nodejs";
+
 // app/api/create-checkout-session/route.js
 import { NextResponse } from "next/server";
 import Stripe from "stripe";

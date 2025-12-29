@@ -1,3 +1,5 @@
+export const runtime = "nodejs";
+
 // app/api/companys/route.js
 import {
   getAllItems,
