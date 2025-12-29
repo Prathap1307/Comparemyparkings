@@ -5,7 +5,7 @@ import { NextResponse } from "next/server";
 import { getUserByClerkId, getVehiclesByUserId } from "@/lib/Database/Utils-db";
 
 export async function GET() {
-  const { userId } = auth();
+  const { userId } = await auth();
 
   console.log("CLERK userId →", userId);
 

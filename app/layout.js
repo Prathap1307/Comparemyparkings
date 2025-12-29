@@ -1,7 +1,6 @@
 // app/layout.js
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import Head from 'next/head'
 import { ClerkProvider } from '@clerk/nextjs';
 
 
@@ -38,9 +37,6 @@ export default function RootLayout({ children }) {
     <ClerkProvider
   >
     <html lang="en">
-      <Head>
-        <link rel="icon" href="/favicon.ico" />
-      </Head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         {children}
 

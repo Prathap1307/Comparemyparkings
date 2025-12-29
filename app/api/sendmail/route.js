@@ -1,3 +1,5 @@
+export const runtime = "nodejs";
+
 import axios from 'axios';
 import { formatDate,formatTime } from '@/utils/formatting';
 

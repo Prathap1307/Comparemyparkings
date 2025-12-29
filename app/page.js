@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Head from 'next/head';
 import Image from 'next/image';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
@@ -161,14 +160,6 @@ export default function Home() {
   /* ---------------- UI ---------------- */
       return (
         <div className="min-h-screen flex flex-col bg-white">
-          <Head>
-            <title>Compare Airport Parking | Best Deals</title>
-            <meta
-              name="description"
-              content="Compare airport parking prices and save up to 60% on meet & greet and park & ride."
-            />
-          </Head>
-
           <Header />
 
           <main className="flex-grow">

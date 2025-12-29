@@ -1,3 +1,5 @@
+export const runtime = "nodejs";
+
 // app/api/chatbotcasemanagement/route.js
 import { createItem } from "@/lib/Database/Utils-db";
 
