@@ -1,3 +1,5 @@
+export const runtime = "nodejs";
+
   // app/api/bookings/route.js
   import { createItem, getAllItems, updateItem, deleteItem } from "@/lib/Database/Utils-db";
 

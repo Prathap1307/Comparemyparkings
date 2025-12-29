@@ -1,3 +1,5 @@
+export const runtime = "nodejs";
+
 // app/api/create-payment-intent/route.js
 import { NextResponse } from "next/server";
 import Stripe from "stripe";

@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import Head from 'next/head';
 
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
@@ -502,11 +501,6 @@ export default function Checkout() {
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
-      <Head>
-        <title>Checkout | ParkCompare</title>
-        <meta name="description" content="Complete your parking booking" />
-      </Head>
-
       <Header />
 
       <main className="flex-grow py-8">
