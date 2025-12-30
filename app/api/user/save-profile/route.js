@@ -2,29 +2,48 @@ export const runtime = "nodejs";
 
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
-import { getUserByClerkId, getVehiclesByUserId } from "@/lib/Database/Utils-db";
+import { createItem, getUserByClerkId, saveUserVehicles } from "@/lib/Database/Utils-db";
 
-export async function GET() {
+export async function POST(request) {
   const { userId } = await auth();
 
   console.log("CLERK userId →", userId);
 
-  if (!userId) return NextResponse.json(null);
+  if (!userId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
-  const user = await getUserByClerkId("users", userId);
-  if (!user) return NextResponse.json(null);
+  const payload = await request.json();
+  const fullName = payload?.fullName || "";
+  const email = payload?.email || "";
+  const phone = payload?.phone || "";
 
-  const vehicles = await getVehiclesByUserId("user_vehicles", userId);
+  if (!fullName && !email && !phone && !Array.isArray(payload?.vehicles)) {
+    return NextResponse.json({ error: "No profile data provided" }, { status: 400 });
+  }
 
-  return NextResponse.json({
-    firstName: user.full_name?.split(" ")[0] || "",
-    lastName: user.full_name?.split(" ")[1] || "",
-    email: user.email,
-    phone: user.phone,
-    vehicles: vehicles.map(v => ({
-      id: v.id,
-      registration: v.registration,
-      is_default: v.is_default,
-    })),
+  const existingUser = await getUserByClerkId("users", userId);
+  const now = new Date().toISOString();
+
+  await createItem("users", {
+    id: userId,
+    full_name: fullName,
+    email,
+    phone,
+    created_at: existingUser?.created_at || now,
+    updated_at: now,
   });
+
+  if (Array.isArray(payload?.vehicles)) {
+    const vehicles = payload.vehicles
+      .filter(Boolean)
+      .map((registration, index) => ({
+        registration,
+        is_default: index === 0,
+      }));
+
+    await saveUserVehicles("user_vehicles", userId, vehicles);
+  }
+
+  return NextResponse.json({ ok: true });
 }
