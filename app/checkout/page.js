@@ -13,11 +13,13 @@ import PromoValidation from '@/components/PromoValidation';
 import { useUser, SignedIn, SignedOut, SignInButton } from '@clerk/nextjs';
 
 // Initialize Stripe
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);
+const stripePromise = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+  ? loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)
+  : null;
 
 /* ---------------- STRIPE FORM ---------------- */
 
-const CheckoutForm = ({ formData, totalPrice, handleBooking }) => {
+const CheckoutForm = ({ formData, totalPrice, handleBooking, clientSecret }) => {
   const stripe = useStripe();
   const elements = useElements();
   const router = useRouter();
@@ -51,25 +53,12 @@ const CheckoutForm = ({ formData, totalPrice, handleBooking }) => {
         throw submitError;
       }
 
-      const response = await fetch('/api/create-payment-intent', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          amount: Math.round(totalPrice * 100),
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to create payment intent');
-      }
-
-      const data = await response.json();
-      if (!data?.clientSecret) {
-        throw new Error('No client secret received');
+      if (!clientSecret) {
+        throw new Error('Payment session is still loading. Please try again.');
       }
 
       const { error, paymentIntent } = await stripe.confirmPayment({
-        clientSecret: data.clientSecret,
+        clientSecret,
         elements,
         confirmParams: {
           return_url: `${window.location.origin}/confirmation`,
@@ -144,6 +133,8 @@ export default function Checkout() {
   const [appliedPromo, setAppliedPromo] = useState(null);
   const [showPromoInput, setShowPromoInput] = useState(false);
   const [shouldValidatePromo, setShouldValidatePromo] = useState(false);
+  const [clientSecret, setClientSecret] = useState('');
+  const [paymentError, setPaymentError] = useState('');
 
   /* ---------------- EXPRESS CHECKOUT (AUTO-FILL) ---------------- */
 
@@ -260,14 +251,57 @@ export default function Checkout() {
   const totalPrice = useMemo(() => calculateTotal(), [calculateTotal]);
   const totalAmount = useMemo(() => Math.round(totalPrice * 100), [totalPrice]);
 
+  useEffect(() => {
+    if (!totalAmount || totalAmount <= 0) {
+      setClientSecret('');
+      return;
+    }
+
+    let isCancelled = false;
+    const createPaymentIntent = async () => {
+      try {
+        setPaymentError('');
+        const response = await fetch('/api/create-payment-intent', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            amount: totalAmount,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to create payment intent');
+        }
+
+        const data = await response.json();
+        if (!data?.clientSecret) {
+          throw new Error('No client secret received');
+        }
+
+        if (!isCancelled) {
+          setClientSecret(data.clientSecret);
+        }
+      } catch (error) {
+        if (!isCancelled) {
+          const message = error && error.message ? error.message : 'Unable to load payment options';
+          setPaymentError(message);
+          setClientSecret('');
+        }
+      }
+    };
+
+    createPaymentIntent();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [totalAmount]);
+
   const elementsOptions = useMemo(
     () => ({
-      mode: 'payment',
-      currency: 'gbp',
-      amount: totalAmount,
-      paymentMethodCreation: 'manual',
+      clientSecret,
     }),
-    [totalAmount]
+    [clientSecret]
   );
 
   /* ---------------- INPUT HANDLERS ---------------- */
@@ -502,7 +536,7 @@ export default function Checkout() {
 
                 <SignedOut>
                   <div className="flex flex-col sm:flex-row gap-3">
-                    <SignInButton mode="modal" redirectUrl="/checkout" afterSignInUrl="/checkout">
+                    <SignInButton mode="redirect" redirectUrl="/checkout" afterSignInUrl="/checkout">
                       <button className="bg-black text-white px-6 py-3 rounded-md hover:bg-gray-900 transition-colors font-medium">
                         Continue with Email / Google / Apple
                       </button>
@@ -858,13 +892,36 @@ export default function Checkout() {
               </div>
 
               {/* Stripe Payment Element (same UI) */}
-              <Elements stripe={stripePromise} options={elementsOptions} key={totalAmount}>
-                <CheckoutForm
-                  formData={{ ...formData, cars }}
-                  totalPrice={totalPrice}
-                  handleBooking={handleBooking}
-                />
-              </Elements>
+              {!stripePromise && (
+                <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+                  <p className="text-red-600">
+                    Payment configuration is missing. Please set the Stripe publishable key.
+                  </p>
+                </div>
+              )}
+
+              {stripePromise && (
+                <>
+                  {!clientSecret && (
+                    <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+                      <p className="text-gray-600">
+                        {paymentError ? `Payment options unavailable: ${paymentError}` : 'Loading payment options...'}
+                      </p>
+                    </div>
+                  )}
+
+                  {clientSecret && (
+                    <Elements stripe={stripePromise} options={elementsOptions} key={clientSecret}>
+                      <CheckoutForm
+                        formData={{ ...formData, cars }}
+                        totalPrice={totalPrice}
+                        handleBooking={handleBooking}
+                        clientSecret={clientSecret}
+                      />
+                    </Elements>
+                  )}
+                </>
+              )}
             </div>
 
             {/* Right column - Booking summary (same UI) */}
