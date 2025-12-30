@@ -82,7 +82,8 @@ const CheckoutForm = ({ formData, totalPrice, handleBooking }) => {
       }
     } catch (error) {
       console.error('Payment error:', error);
-      alert(`Payment failed: ${error?.message || 'Unknown error'}`);
+      const message = error && error.message ? error.message : 'Unknown error';
+      alert(`Payment failed: ${message}`);
     } finally {
       setProcessing(false);
     }
