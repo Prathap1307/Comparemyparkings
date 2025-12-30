@@ -46,6 +46,11 @@ const CheckoutForm = ({ formData, totalPrice, handleBooking }) => {
         return;
       }
 
+      const { error: submitError } = await elements.submit();
+      if (submitError) {
+        throw submitError;
+      }
+
       const response = await fetch('/api/create-payment-intent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -260,6 +265,7 @@ export default function Checkout() {
       mode: 'payment',
       currency: 'gbp',
       amount: totalAmount,
+      paymentMethodCreation: 'manual',
     }),
     [totalAmount]
   );
@@ -496,7 +502,7 @@ export default function Checkout() {
 
                 <SignedOut>
                   <div className="flex flex-col sm:flex-row gap-3">
-                    <SignInButton>
+                    <SignInButton mode="modal" redirectUrl="/checkout" afterSignInUrl="/checkout">
                       <button className="bg-black text-white px-6 py-3 rounded-md hover:bg-gray-900 transition-colors font-medium">
                         Continue with Email / Google / Apple
                       </button>
