@@ -8,7 +8,6 @@ import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-
 
 import Footer from '@/components/Footer';
 import Header from '@/components/Header';
-import Loading from '@/components/Loading';
 import PromoValidation from '@/components/PromoValidation';
 
 import { useUser, SignedIn, SignedOut, SignInButton } from '@clerk/nextjs';
@@ -18,27 +17,17 @@ const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)
 
 /* ---------------- STRIPE FORM ---------------- */
 
-const CheckoutForm = ({
-  formData,
-  bookingData,
-  searchData,
-  totalPrice,
-  onProcessingChange,
-  handleBooking,
-}) => {
+const CheckoutForm = ({ formData, totalPrice, handleBooking }) => {
   const stripe = useStripe();
   const elements = useElements();
   const router = useRouter();
   const [processing, setProcessing] = useState(false);
-
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!stripe || !elements) return;
 
     setProcessing(true);
-    onProcessingChange(true);
-
     try {
       // Validate required fields (first car is required)
       if (
@@ -52,8 +41,30 @@ const CheckoutForm = ({
         return;
       }
 
-      // Process payment
+      if (!totalPrice || totalPrice <= 0) {
+        alert('Invalid total amount. Please refresh and try again.');
+        return;
+      }
+
+      const response = await fetch('/api/create-payment-intent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: Math.round(totalPrice * 100),
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create payment intent');
+      }
+
+      const data = await response.json();
+      if (!data?.clientSecret) {
+        throw new Error('No client secret received');
+      }
+
       const { error, paymentIntent } = await stripe.confirmPayment({
+        clientSecret: data.clientSecret,
         elements,
         confirmParams: {
           return_url: `${window.location.origin}/confirmation`,
@@ -74,7 +85,6 @@ const CheckoutForm = ({
       alert(`Payment failed: ${error?.message || 'Unknown error'}`);
     } finally {
       setProcessing(false);
-      onProcessingChange(false);
     }
   };
 
@@ -103,12 +113,10 @@ export default function Checkout() {
 
   const [bookingData, setBookingData] = useState(null);
   const [searchData, setSearchData] = useState(null);
-  const [clientSecret, setClientSecret] = useState(null);
-  const [processing, setProcessing] = useState(false);
   const [cars, setCars] = useState([
     { carReg: '' }, // car 1 required
   ]);
-  
+
   const [savedCars, setSavedCars] = useState([]);
 
   // ✅ Keep your formData & UI same, but carReg moved to cars[0].carReg internally
@@ -137,46 +145,42 @@ export default function Checkout() {
     if (!isLoaded || !isSignedIn || !user?.id) return;
 
     const loadProfile = async () => {
-      const res = await fetch("/api/user/profile", {
-        credentials: "include",
+      const res = await fetch('/api/user/profile', {
+        credentials: 'include',
       });
 
       const data = await res.json();
 
-      console.log("PROFILE DATA →", data); 
+      console.log('PROFILE DATA →', data);
 
       if (!data) return;
 
       setFormData({
-        title: "Mr",
-        firstName: data.firstName || "",
-        lastName: data.lastName || "",
-        email: data.email || "",
-        contactNumber: data.phone || "",
-        flightNumber: "",
-        departureTerminal: "",
-        returnFlightNumber: "",
-        arrivalTerminal: "",
-        customerInstruction: "",
+        title: 'Mr',
+        firstName: data.firstName || '',
+        lastName: data.lastName || '',
+        email: data.email || '',
+        contactNumber: data.phone || '',
+        flightNumber: '',
+        departureTerminal: '',
+        returnFlightNumber: '',
+        arrivalTerminal: '',
+        customerInstruction: '',
       });
 
       if (data.vehicles?.length) {
         setSavedCars(data.vehicles);
         setCars(
-          data.vehicles.slice(0, 3).map(v => ({
-            carReg: v.registration || "",
+          data.vehicles.slice(0, 3).map((v) => ({
+            carReg: v.registration || '',
             saveForLater: true,
           }))
         );
       }
-
     };
 
     loadProfile();
   }, [isLoaded, isSignedIn, user?.id]);
-
-
-
 
   /* ---------------- LOAD DATA ---------------- */
 
@@ -228,16 +232,13 @@ export default function Checkout() {
 
   // Cars total with multiplier: car1 x1, car2 x2, car3 x3
   const carsMultiplierTotal = useMemo(() => {
-    const validCars = cars.filter(
-      (c) => (c.carReg || '').trim().length > 0
-    );
+    const validCars = cars.filter((c) => (c.carReg || '').trim().length > 0);
 
     // Always charge at least for 1 car
     const carCount = Math.max(1, validCars.length);
 
     return baseTotal * carCount;
   }, [cars, baseTotal]);
-
 
   const calculateTotal = useCallback(() => {
     if (!bookingData || !searchData) return 0;
@@ -250,36 +251,17 @@ export default function Checkout() {
     return carsMultiplierTotal;
   };
 
-  /* ---------------- PAYMENT INTENT ---------------- */
+  const totalPrice = useMemo(() => calculateTotal(), [calculateTotal]);
+  const totalAmount = useMemo(() => Math.round(totalPrice * 100), [totalPrice]);
 
-  useEffect(() => {
-    if (!bookingData || !searchData) return;
-
-    const createPaymentIntent = async () => {
-      try {
-        const response = await fetch('/api/create-payment-intent', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            amount: Math.round(calculateTotal() * 100),
-          }),
-        });
-
-        const data = await response.json();
-        if (data.clientSecret) {
-          setClientSecret(data.clientSecret);
-          if (data.paymentIntentId) localStorage.setItem('paymentIntentId', data.paymentIntentId);
-        } else {
-          console.error('No client secret received');
-        }
-      } catch (error) {
-        console.error('Payment intent error:', error);
-        alert('Failed to initialize payment');
-      }
-    };
-
-    createPaymentIntent();
-  }, [bookingData, searchData, calculateTotal]);
+  const elementsOptions = useMemo(
+    () => ({
+      mode: 'payment',
+      currency: 'gbp',
+      amount: totalAmount,
+    }),
+    [totalAmount]
+  );
 
   /* ---------------- INPUT HANDLERS ---------------- */
 
@@ -361,8 +343,6 @@ export default function Checkout() {
       console.error('Please complete all required fields');
       return;
     }
-
-    setProcessing(true);
 
     try {
       const cleanCars = cars
@@ -455,37 +435,32 @@ export default function Checkout() {
         await fetch('/api/user/save-profile', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          credentials: "include",
+          credentials: 'include',
           body: JSON.stringify({
             clerkUserId: user.id,
             fullName: `${formData.firstName} ${formData.lastName}`,
             email: formData.email,
             phone: formData.contactNumber,
-            vehicles: cleanCars.map(c => c.carReg),
+            vehicles: cleanCars.map((c) => c.carReg),
           }),
         });
       }
       window.location.href = '/payment/success';
     } catch (error) {
       console.error('Booking failed:', error?.message || error);
-    } finally {
-      setProcessing(false);
     }
   };
 
-
-
   const toggleSavedCar = (reg) => {
     setCars((prev) => {
-      const exists = prev.find(c => c.carReg === reg);
+      const exists = prev.find((c) => c.carReg === reg);
       if (exists) {
-        return prev.filter(c => c.carReg !== reg);
+        return prev.filter((c) => c.carReg !== reg);
       }
       if (prev.length >= 3) return prev;
       return [...prev, { carReg: reg }];
     });
   };
-
 
   /* ---------------- LOADING ---------------- */
 
@@ -511,7 +486,6 @@ export default function Checkout() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Left column - Form */}
             <div className="lg:col-span-2">
-
               {/* ✅ EXPRESS CHECKOUT (NEW, but same design language) */}
               <div className="bg-white rounded-lg shadow-md p-6 mb-6">
                 <h2 className="text-2xl font-bold text-gray-800 mb-2">Express checkout</h2>
@@ -521,7 +495,7 @@ export default function Checkout() {
 
                 <SignedOut>
                   <div className="flex flex-col sm:flex-row gap-3">
-                    <SignInButton >
+                    <SignInButton>
                       <button className="bg-black text-white px-6 py-3 rounded-md hover:bg-gray-900 transition-colors font-medium">
                         Continue with Email / Google / Apple
                       </button>
@@ -631,9 +605,7 @@ export default function Checkout() {
                     <h3 className="text-lg font-semibold text-gray-800 mb-4">Vehicle details</h3>
                     {isSignedIn && savedCars.length > 0 && (
                       <div className="mb-6">
-                        <h3 className="text-lg font-semibold text-gray-800 mb-3">
-                          Saved vehicles
-                        </h3>
+                        <h3 className="text-lg font-semibold text-gray-800 mb-3">Saved vehicles</h3>
 
                         <div className="space-y-2">
                           {savedCars.map((car) => (
@@ -644,12 +616,10 @@ export default function Checkout() {
                               <div className="flex items-center gap-3">
                                 <input
                                   type="checkbox"
-                                  checked={cars.some(c => c.carReg === car.registration)}
+                                  checked={cars.some((c) => c.carReg === car.registration)}
                                   onChange={() => toggleSavedCar(car.registration)}
                                 />
-                                <span className="font-medium text-black">
-                                  {car.registration}
-                                </span>
+                                <span className="font-medium text-black">{car.registration}</span>
 
                                 {car.is_default && (
                                   <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">
@@ -691,20 +661,16 @@ export default function Checkout() {
                                 type="checkbox"
                                 checked={c.saveForLater || false}
                                 onChange={(e) => {
-                                  setCars(prev => {
+                                  setCars((prev) => {
                                     const copy = [...prev];
                                     copy[idx].saveForLater = e.target.checked;
                                     return copy;
                                   });
                                 }}
                               />
-                              <span className="text-sm text-gray-600">
-                                Save this car for next time
-                              </span>
+                              <span className="text-sm text-gray-600">Save this car for next time</span>
                             </div>
                           )}
-
-
 
                           <div className="flex gap-2">
                             {idx > 0 && (
@@ -728,7 +694,6 @@ export default function Checkout() {
                         >
                           + Add another car (up to 3)
                         </button>
-                        
                       )}
                     </div>
                   </div>
@@ -739,7 +704,9 @@ export default function Checkout() {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Flight Number (Departure)*</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Flight Number (Departure)*
+                        </label>
                         <input
                           type="text"
                           name="flightNumber"
@@ -751,7 +718,9 @@ export default function Checkout() {
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Flight Number (Return)*</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Flight Number (Return)*
+                        </label>
                         <input
                           type="text"
                           name="returnFlightNumber"
@@ -815,7 +784,6 @@ export default function Checkout() {
                       </div>
                     </div>
                   </div>
-
                 </div>
               </div>
 
@@ -883,23 +851,13 @@ export default function Checkout() {
               </div>
 
               {/* Stripe Payment Element (same UI) */}
-              {clientSecret ? (
-                <Elements stripe={stripePromise} options={{ clientSecret }}>
-                  <CheckoutForm
-                    formData={{ ...formData, cars }}
-                    bookingData={bookingData}
-                    searchData={searchData}
-                    totalPrice={calculateTotal()}
-                    onProcessingChange={setProcessing}
-                    handleBooking={handleBooking}
-                  />
-                </Elements>
-              ) : (
-                <div className="bg-white rounded-lg shadow-md p-6 mb-6 flex items-center justify-center">
-                  <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500 mr-3"></div>
-                  <span>Loading payment options...</span>
-                </div>
-              )}
+              <Elements stripe={stripePromise} options={elementsOptions} key={totalAmount}>
+                <CheckoutForm
+                  formData={{ ...formData, cars }}
+                  totalPrice={totalPrice}
+                  handleBooking={handleBooking}
+                />
+              </Elements>
             </div>
 
             {/* Right column - Booking summary (same UI) */}
